@@ -83,7 +83,7 @@ function ensure_database_exists(): void
 
     $tableExists = (int) $pdo->query('SELECT COUNT(*) FROM students')->fetchColumn() > 0;
     if (!$tableExists || database_needs_student_reimport($pdo)) {
-        import_excel_to_database($pdo, EXCEL_PATH);
+        import_excel_to_database($pdo, EXCEL_PATH, PROFILE_EXCEL_PATH);
     }
 
     $initialized = true;
@@ -92,7 +92,7 @@ function ensure_database_exists(): void
 function database_needs_student_reimport(PDO $pdo): bool
 {
     try {
-        $sample = $pdo->query('SELECT username_display, username_normalized, name FROM students ORDER BY id ASC LIMIT 5')->fetchAll();
+        $sample = $pdo->query('SELECT username_display, username_normalized, name, bio, class_name FROM students ORDER BY id ASC LIMIT 5')->fetchAll();
         if ($sample === []) {
             return true;
         }
@@ -101,14 +101,26 @@ function database_needs_student_reimport(PDO $pdo): bool
             $display = trim((string) ($row['username_display'] ?? ''));
             $normalized = trim((string) ($row['username_normalized'] ?? ''));
             $name = trim((string) ($row['name'] ?? ''));
+            $bio = trim((string) ($row['bio'] ?? ''));
+            $className = trim((string) ($row['class_name'] ?? ''));
 
             if ($display === '' || $name === '') {
+                return true;
+            }
+
+            if ($className === '') {
                 return true;
             }
 
             // Re-import if old records still use synthetic usernames like "smk12075"
             // or any username that no longer mirrors the student's name.
             if ($display !== $name || $normalized !== normalize_username($name)) {
+                return true;
+            }
+
+            // Re-import if database still contains an unexpected source format
+            // or missing profile enrichment from the latest student master.
+            if ($bio === '') {
                 return true;
             }
         }
@@ -139,7 +151,7 @@ function reset_database(): void
     ensure_database_exists();
 }
 
-function import_excel_to_database(PDO $pdo, string $excelPath): void
+function import_excel_to_database(PDO $pdo, string $excelPath, ?string $profileExcelPath = null): void
 {
     if (!is_file($excelPath)) {
         throw new RuntimeException('File Excel tidak ditemukan.');
@@ -160,6 +172,19 @@ function import_excel_to_database(PDO $pdo, string $excelPath): void
 
     $sharedStrings = parse_shared_strings($sharedStringsXml);
     $rows = parse_sheet_rows($sheetXml, $sharedStrings);
+    $profileRows = load_profile_rows($profileExcelPath);
+    $profileByStudentId = [];
+    $profileByName = [];
+    foreach ($profileRows as $profileRow) {
+        $studentId = preg_replace('/\D+/', '', (string) ($profileRow['C'] ?? ''));
+        $name = trim((string) ($profileRow['B'] ?? $profileRow['A'] ?? ''));
+        if ($studentId !== '') {
+            $profileByStudentId[$studentId] = $profileRow;
+        }
+        if ($name !== '') {
+            $profileByName[normalize_username($name)] = $profileRow;
+        }
+    }
 
     $pdo->beginTransaction();
     $pdo->exec('TRUNCATE TABLE students');
@@ -183,8 +208,29 @@ function import_excel_to_database(PDO $pdo, string $excelPath): void
         $name = trim((string) $row['C']);
         $className = trim((string) ($row['E'] ?? ''));
         $absenNo = preg_replace('/\D+/', '', (string) ($row['F'] ?? ''));
+        $jurusan = extract_jurusan($className);
+        $studentId = $password;
+        $bio = 'PESERTA UTS SMKN 2 SRAGEN';
+
         if ($password === '' || $name === '') {
             continue;
+        }
+
+        $profileRow = $profileByStudentId[$studentId] ?? $profileByName[normalize_username($name)] ?? null;
+        if ($profileRow) {
+            $profileClassName = trim((string) ($profileRow['G'] ?? ''));
+            $profileJurusan = trim((string) ($profileRow['F'] ?? ''));
+            $address = trim((string) ($profileRow['I'] ?? ''));
+
+            if ($profileClassName !== '') {
+                $className = $profileClassName;
+            }
+            if ($profileJurusan !== '') {
+                $jurusan = $profileJurusan;
+            }
+            if ($address !== '') {
+                $bio = 'ALAMAT: ' . mb_strtoupper($address, 'UTF-8');
+            }
         }
 
         $stmt->execute([
@@ -193,14 +239,37 @@ function import_excel_to_database(PDO $pdo, string $excelPath): void
             ':password' => $password,
             ':name' => $name,
             ':class_name' => $className,
-            ':jurusan' => extract_jurusan($className),
+            ':jurusan' => $jurusan !== '' ? $jurusan : extract_jurusan($className),
             ':absen_no' => $absenNo,
-            ':student_id' => $password,
-            ':bio' => 'PESERTA UTS SMKN 2 SRAGEN',
+            ':student_id' => $studentId,
+            ':bio' => $bio,
         ]);
     }
 
     $pdo->commit();
+}
+
+function load_profile_rows(?string $excelPath): array
+{
+    if (!$excelPath || !is_file($excelPath)) {
+        return [];
+    }
+
+    $zip = new ZipArchive();
+    if ($zip->open($excelPath) !== true) {
+        return [];
+    }
+
+    $sharedStringsXml = $zip->getFromName('xl/sharedStrings.xml');
+    $sheetXml = $zip->getFromName('xl/worksheets/sheet1.xml');
+    $zip->close();
+
+    if ($sharedStringsXml === false || $sheetXml === false) {
+        return [];
+    }
+
+    $sharedStrings = parse_shared_strings($sharedStringsXml);
+    return parse_sheet_rows($sheetXml, $sharedStrings);
 }
 
 function parse_shared_strings(string $xml): array
