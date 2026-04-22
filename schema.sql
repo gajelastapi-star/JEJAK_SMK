@@ -2,6 +2,8 @@ CREATE TABLE IF NOT EXISTS students (
     id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     username_normalized VARCHAR(191) NOT NULL UNIQUE,
     username_display VARCHAR(191) NOT NULL,
+    secondary_username_normalized VARCHAR(191) NULL,
+    secondary_username_display VARCHAR(191) NULL,
     password VARCHAR(50) NOT NULL,
     name VARCHAR(191) NOT NULL,
     class_name VARCHAR(100) NOT NULL,
