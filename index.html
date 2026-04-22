@@ -1802,6 +1802,7 @@
         }
 
         let serverErrorMessage = "";
+        let serverReachable = false;
         try {
           const response = await fetch("./api/login.php", {
             method: "POST",
@@ -1809,6 +1810,7 @@
             body: JSON.stringify({ username, password }),
           });
 
+          serverReachable = true;
           const result = await response.json();
           if (response.ok && result.success) {
             window.currentUser = {
@@ -1827,7 +1829,9 @@
         }
 
         showNotification(
-          serverErrorMessage || "Login gagal. Server wajib aktif untuk membatasi 1 akun 1 HP.",
+          serverReachable
+            ? serverErrorMessage || "Username atau password tidak cocok."
+            : "Server login tidak terhubung. Jalankan aplikasi dari server yang aktif.",
           "error",
         );
       };
@@ -1888,7 +1892,7 @@
               localStorage.removeItem("smkn2_live_session");
               document.getElementById("splash-screen").style.display = "none";
               document.getElementById("login-screen").classList.remove("hidden");
-              showNotification("Login ulang diperlukan agar 1 akun hanya dipakai 1 HP", "error");
+              showNotification("Login ulang diperlukan karena sesi server tidak lengkap", "error");
               return;
             }
 
@@ -1902,7 +1906,10 @@
                   localStorage.removeItem("smkn2_live_session");
                   document.getElementById("splash-screen").style.display = "none";
                   document.getElementById("login-screen").classList.remove("hidden");
-                  showNotification("Sesi akun sudah dipakai di perangkat lain", "error");
+                  showNotification(
+                    body.message || "Sesi akun sudah tidak aktif atau dipakai di perangkat lain",
+                    "error",
+                  );
                   return;
                 }
                 window.currentUser = {
@@ -1919,7 +1926,7 @@
                 localStorage.removeItem("smkn2_live_session");
                 document.getElementById("splash-screen").style.display = "none";
                 document.getElementById("login-screen").classList.remove("hidden");
-                showNotification("Server tidak bisa memverifikasi sesi akun", "error");
+                showNotification("Server sesi tidak terhubung. Silakan login ulang.", "error");
               });
           } else {
             document.getElementById("splash-screen").style.display = "none";
