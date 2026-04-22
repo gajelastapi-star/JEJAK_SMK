@@ -164,7 +164,7 @@
       }
 
       #map {
-        height: 350px;
+        height: 290px;
         width: 100%;
         border-radius: 2.5rem;
         border: 8px solid white;
@@ -482,7 +482,7 @@
                       id="gps-status"
                       class="inline-block px-3 py-1.5 rounded-lg bg-red-100 text-red-600 text-[9px] font-black uppercase mt-3 tracking-wider"
                     >
-                      ● MENGHUBUNGKAN...
+                      â— MENGHUBUNGKAN...
                     </div>
                   </div>
                 </div>
@@ -569,6 +569,54 @@
                 </button>
               </div>
 
+              <div
+                id="student-photo-panel"
+                class="glass-card p-5 rounded-[2.2rem] space-y-4 text-center hidden"
+              >
+                <div class="photo-frame w-36 h-36 rounded-[2rem] p-2 mx-auto shadow-lg">
+                  <img
+                    id="photo-page-preview"
+                    src=""
+                    class="w-full h-full object-cover object-center rounded-[1.5rem] bg-white"
+                  />
+                </div>
+                <div class="space-y-2">
+                  <p class="text-[11px] font-black uppercase tracking-widest text-blue-600">
+                    Foto Wajah Kehadiran
+                  </p>
+                  <p class="text-[10px] text-slate-400 font-bold uppercase leading-relaxed">
+                    Kamera muncul otomatis saat Anda sudah berada di dalam area sekolah.
+                  </p>
+                </div>
+                <div
+                  id="photo-status-badge"
+                  class="inline-block px-3 py-2 rounded-xl bg-red-100 text-red-600 text-[10px] font-black uppercase tracking-wider"
+                >
+                  Kamera belum aktif
+                </div>
+                <label
+                  for="attendance-photo-input"
+                  id="btn-open-camera"
+                  onclick="return openAttendanceCamera(event)"
+                  class="block w-full py-4 rounded-2xl bg-slate-200 text-slate-500 text-[10px] uppercase shadow-lg font-black tracking-widest cursor-not-allowed"
+                >
+                  Ambil Foto Wajah
+                </label>
+                <input
+                  type="file"
+                  id="attendance-photo-input"
+                  accept="image/*"
+                  capture="user"
+                  class="hidden"
+                />
+                <p
+                  id="photo-upload-info"
+                  class="text-[10px] text-slate-400 font-bold uppercase"
+                >
+                  Setelah foto wajah berhasil, tombol absen akan aktif otomatis.
+                </p>
+              </div>
+
               <!-- TOMBOL ABSEN MANUAL (Pindahan dari atas) -->
               <button
                 id="btn-absen"
@@ -605,7 +653,7 @@
               <div
                 class="w-24 h-24 bg-blue-100 rounded-[2rem] flex items-center justify-center text-4xl mx-auto mt-4"
               >
-                🏛️
+                ðŸ›ï¸
               </div>
               <h3 class="font-black dark:text-white uppercase text-xl">
                 SMKN 2 SRAGEN
@@ -619,57 +667,7 @@
           </div>
 
           <!-- TAB: PHOTO -->
-          <div id="page-photo" class="page-content space-y-6">
-            <h2 class="text-xl font-black uppercase italic dark:text-white">
-              Foto Siswa
-            </h2>
-            <div
-              id="student-photo-panel"
-              class="glass-card p-6 rounded-[2.5rem] space-y-5 text-center"
-            >
-              <div class="photo-frame w-48 h-48 rounded-[2.5rem] p-2 mx-auto shadow-xl">
-                <img
-                  id="photo-page-preview"
-                  src=""
-                  class="w-full h-full object-cover rounded-[2rem] bg-white"
-                />
-              </div>
-              <div class="space-y-2">
-                <p class="text-xs font-black uppercase tracking-widest text-blue-600">
-                  Foto Kehadiran Sekolah
-                </p>
-                <p class="text-xs text-slate-400 font-bold uppercase leading-relaxed">
-                  Fitur ini aktif setelah koordinat Anda berada di dalam area sekolah.
-                </p>
-              </div>
-              <div
-                id="photo-status-badge"
-                class="inline-block px-3 py-2 rounded-xl bg-red-100 text-red-600 text-[10px] font-black uppercase tracking-wider"
-              >
-                Kamera belum aktif
-              </div>
-              <label
-                for="attendance-photo-input"
-                id="btn-open-camera"
-                onclick="return openAttendanceCamera(event)"
-                class="block w-full py-4 rounded-2xl bg-slate-200 text-slate-500 text-[10px] uppercase shadow-lg font-black tracking-widest cursor-not-allowed"
-              >
-                Ambil Foto Sekolah
-              </label>
-              <input
-                type="file"
-                id="attendance-photo-input"
-                accept="image/*"
-                capture="environment"
-                class="hidden"
-              />
-              <p
-                id="photo-upload-info"
-                class="text-[10px] text-slate-400 font-bold uppercase"
-              >
-                Foto akan otomatis dikirim ke admin setelah dipilih.
-              </p>
-            </div>
+          <div id="page-photo" class="page-content hidden space-y-6">
             <div
               id="admin-photo-panel"
               class="glass-card p-6 rounded-[2.5rem] space-y-4 hidden"
@@ -773,9 +771,6 @@
         <div id="nav-history" class="nav-item" onclick="switchTab('history', this)">
           <i class="fa-solid fa-list-ul"></i><span>Log</span>
         </div>
-        <div id="nav-photo" class="nav-item" onclick="switchTab('photo', this)">
-          <i class="fa-solid fa-camera"></i><span>Foto</span>
-        </div>
         <div id="nav-school" class="nav-item" onclick="switchTab('school', this)">
           <i class="fa-solid fa-school"></i><span>School</span>
         </div>
@@ -871,6 +866,7 @@
         avatar: "char-live-1",
         photo: "",
         lastAttendancePhoto: "",
+        attendancePhotoDay: "",
         bio: "SMKN 2 SRAGEN",
       };
       window.map = null;
@@ -1093,6 +1089,7 @@
           avatar: record.avatar || "char-live-1",
           photo: record.photo || "",
           lastAttendancePhoto: record.lastAttendancePhoto || "",
+          attendancePhotoDay: record.attendancePhotoDay || "",
           bio: record.bio || "PESERTA UTS SMKN 2 SRAGEN",
         };
       }
@@ -1201,6 +1198,7 @@
           avatar: admin.avatar,
           photo: "",
           lastAttendancePhoto: "",
+          attendancePhotoDay: "",
           bio: admin.bio,
           sessionMode: "local",
         };
@@ -1350,22 +1348,40 @@
       }
 
       function updatePhotoFeatureState() {
+        const panel = document.getElementById("student-photo-panel");
         const badge = document.getElementById("photo-status-badge");
         const button = document.getElementById("btn-open-camera");
-        if (!badge || !button) return;
-        if (window.currentUser.role === "guru") return;
-        if (window.isInsideSchool) {
+        if (!panel || !badge || !button) return;
+        if (window.currentUser.role === "guru") {
+          panel.classList.add("hidden");
+          return;
+        }
+
+        const today = new Date().toLocaleDateString("id-ID");
+        const hasPhotoToday = window.currentUser.attendancePhotoDay === today;
+        panel.classList.toggle("hidden", !window.isInsideSchool);
+
+        if (window.isInsideSchool && hasPhotoToday) {
+          badge.className =
+            "inline-block px-3 py-2 rounded-xl bg-emerald-100 text-emerald-600 text-[10px] font-black uppercase tracking-wider";
+          badge.innerText = "Foto wajah sudah siap";
+          button.className =
+            "block w-full py-4 rounded-2xl bg-emerald-500 text-white text-[10px] uppercase shadow-lg font-black tracking-widest cursor-pointer";
+          button.innerText = "Ambil Ulang Foto Wajah";
+        } else if (window.isInsideSchool) {
           badge.className =
             "inline-block px-3 py-2 rounded-xl bg-green-100 text-green-600 text-[10px] font-black uppercase tracking-wider";
           badge.innerText = "Kamera aktif di area sekolah";
           button.className =
             "block w-full py-4 rounded-2xl btn-premium text-[10px] uppercase shadow-lg font-black tracking-widest cursor-pointer";
+          button.innerText = "Ambil Foto Wajah";
         } else {
           badge.className =
             "inline-block px-3 py-2 rounded-xl bg-red-100 text-red-600 text-[10px] font-black uppercase tracking-wider";
           badge.innerText = "Kamera belum aktif";
           button.className =
             "block w-full py-4 rounded-2xl bg-slate-200 text-slate-500 text-[10px] uppercase shadow-lg font-black tracking-widest cursor-not-allowed";
+          button.innerText = "Ambil Foto Wajah";
         }
       }
 
@@ -1416,7 +1432,7 @@
               <img src="${report.photo}" class="w-full h-44 object-cover rounded-[1.25rem] bg-slate-100" />
               <div class="space-y-1">
                 <p class="text-xs font-black uppercase dark:text-white">${report.name}</p>
-                <p class="text-[10px] font-bold uppercase text-slate-400">${report.class} • ABSEN ${report.absenNo}</p>
+                <p class="text-[10px] font-bold uppercase text-slate-400">${report.class} â€¢ ABSEN ${report.absenNo}</p>
                 <p class="text-[10px] font-bold uppercase text-blue-600">${new Date(report.timestamp).toLocaleString("id-ID")}</p>
               </div>
             </div>`,
@@ -1443,6 +1459,7 @@
           avatar: savedUser.avatar || dbRecord?.avatar || "char-live-1",
           photo: savedUser.photo || dbRecord?.photo || "",
           lastAttendancePhoto: savedUser.lastAttendancePhoto || "",
+          attendancePhotoDay: savedUser.attendancePhotoDay || "",
           sessionToken: savedUser.sessionToken || "",
           sessionMode: savedUser.sessionMode || (savedUser.sessionToken ? "server" : "local"),
           bio: savedUser.bio || dbRecord?.bio || "PESERTA UTS SMKN 2 SRAGEN",
@@ -1530,7 +1547,7 @@
           document.getElementById("view-student").classList.remove("hidden");
           document.getElementById("view-teacher").classList.add("hidden");
           document.getElementById("top-role").innerText =
-            `${window.currentUser.class} • Absen ${window.currentUser.absenNo}`;
+            `${window.currentUser.class} â€¢ Absen ${window.currentUser.absenNo}`;
         }
 
         updateUIVisuals();
@@ -1769,7 +1786,7 @@
       function handleAttendancePhoto(file) {
         if (window.currentUser.role === "guru") return;
         if (!window.isInsideSchool || !window.userPos) {
-          showNotification("Foto hanya bisa dikirim saat berada di sekolah", "error");
+          showNotification("Foto wajah hanya aktif saat berada di sekolah", "error");
           return;
         }
         if (!file.type.startsWith("image/")) {
@@ -1783,16 +1800,19 @@
 
         compressImage(file, (photoData) => {
           window.currentUser.lastAttendancePhoto = photoData;
+          window.currentUser.attendancePhotoDay = new Date().toLocaleDateString("id-ID");
           localStorage.setItem(
             "smkn2_live_session",
             JSON.stringify(window.currentUser),
           );
           const preview = document.getElementById("photo-page-preview");
           if (preview) preview.src = photoData;
-          addHistoryLog("Mengirim foto kehadiran ke admin");
+          addHistoryLog("Mengambil foto wajah untuk kehadiran");
+          updatePhotoFeatureState();
+          updateAbsenButtonState();
 
           if (!db || !userSession) {
-            showNotification("Cloud belum aktif, foto belum terkirim ke admin", "error");
+            showNotification("Foto wajah tersimpan. Tombol absen sudah aktif.", "success");
             return;
           }
 
@@ -1807,8 +1827,12 @@
             photo: photoData,
             timestamp: Date.now(),
           })
-            .then(() => showNotification("Foto berhasil dikirim ke admin", "success"))
-            .catch(() => showNotification("Gagal mengirim foto ke admin", "error"));
+            .then(() =>
+              showNotification("Foto wajah berhasil dikirim. Sekarang tekan absen.", "success"),
+            )
+            .catch(() =>
+              showNotification("Foto tersimpan, tetapi pengiriman ke admin gagal", "error"),
+            );
         });
       }
 
@@ -1866,7 +1890,15 @@
       function updateAbsenButtonState() {
         window.hasAbsen = window.checkHasAbsenToday();
         const btn = document.getElementById("btn-absen");
-        if (btn && window.hasAbsen) {
+        if (!btn) return;
+
+        const hasPhotoToday =
+          window.currentUser.attendancePhotoDay ===
+          new Date().toLocaleDateString("id-ID");
+
+        btn.classList.add("hidden");
+
+        if (window.hasAbsen) {
           btn.innerHTML = `<i class="fa-solid fa-check-circle mr-2 text-lg"></i> SUDAH ABSEN`;
           btn.disabled = true;
           btn.classList.add("opacity-50", "cursor-not-allowed");
@@ -1877,6 +1909,24 @@
             "dark:bg-slate-800",
             "dark:text-slate-400",
           );
+          btn.classList.remove("hidden");
+          return;
+        }
+
+        btn.disabled = false;
+        btn.innerHTML = `<i class="fa-solid fa-fingerprint mr-2 text-xl"></i> ABSEN SEKARANG`;
+        btn.classList.remove(
+          "opacity-50",
+          "cursor-not-allowed",
+          "bg-slate-300",
+          "text-slate-500",
+          "dark:bg-slate-800",
+          "dark:text-slate-400",
+        );
+        btn.classList.add("btn-premium");
+
+        if (window.currentUser.role === "siswa" && window.isInsideSchool && hasPhotoToday) {
+          btn.classList.remove("hidden");
         }
       }
 
@@ -1887,6 +1937,13 @@
         }
         const dist = window.map.distance(window.userPos, [-7.4257, 111.0087]);
         if (dist < 200) {
+          const hasPhotoToday =
+            window.currentUser.attendancePhotoDay ===
+            new Date().toLocaleDateString("id-ID");
+          if (!hasPhotoToday) {
+            showNotification("Ambil foto wajah dulu sebelum absen", "error");
+            return;
+          }
           const now = new Date();
           const late =
             now.getHours() > 7 || (now.getHours() == 7 && now.getMinutes() > 0);
@@ -1968,18 +2025,18 @@
               // UPDATE UI LOKAL
               if (window.currentUser.role === "siswa") {
                 if (isInside) {
-                  badge.innerText = "● DI DALAM SEKOLAH";
+                  badge.innerText = "â— DI DALAM SEKOLAH";
                   badge.className =
                     "inline-block px-3 py-1.5 rounded-lg bg-green-100 text-green-600 text-[9px] font-black uppercase mb-2";
-                  // Tampilkan tombol absen jika belum absen
-                  if (btnAbsen) btnAbsen.classList.remove("hidden");
+
                 } else {
-                  badge.innerText = "● DI LUAR SEKOLAH";
+                  badge.innerText = "â— DI LUAR SEKOLAH";
                   badge.className =
                     "inline-block px-3 py-1.5 rounded-lg bg-red-100 text-red-600 text-[9px] font-black uppercase mb-2";
-                  // Sembunyikan tombol absen jika di luar
-                  if (btnAbsen) btnAbsen.classList.add("hidden");
+
                 }
+
+                updateAbsenButtonState();
 
                 const myColor = isInside ? "#22c55e" : "#ef4444";
                 const dot = L.divIcon({
@@ -2031,3 +2088,4 @@
     </script>
   </body>
 </html>
+
