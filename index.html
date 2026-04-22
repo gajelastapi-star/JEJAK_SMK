@@ -503,7 +503,7 @@
                       id="gps-status"
                       class="inline-block px-3 py-1.5 rounded-lg bg-red-100 text-red-600 text-[9px] font-black uppercase mt-3 tracking-wider"
                     >
-                      â— MENGHUBUNGKAN...
+                      MENGHUBUNGKAN...
                     </div>
                   </div>
                 </div>
@@ -615,14 +615,14 @@
                 >
                   Kamera belum aktif
                 </div>
-                <label
-                  for="attendance-photo-input"
+                <button
+                  type="button"
                   id="btn-open-camera"
-                  onclick="return openAttendanceCamera(event)"
+                  onclick="openAttendanceCamera(event)"
                   class="block w-full py-4 rounded-2xl bg-slate-200 text-slate-500 text-[10px] uppercase shadow-lg font-black tracking-widest cursor-not-allowed"
                 >
                   Ambil Foto Wajah
-                </label>
+                </button>
                 <input
                   type="file"
                   id="attendance-photo-input"
@@ -669,21 +669,127 @@
               Tentang Sekolah
             </h2>
             <div
-              class="glass-card p-6 rounded-[2.5rem] space-y-4 text-center pb-8"
+              class="glass-card p-6 rounded-[2.5rem] space-y-5 text-center pb-8"
             >
               <div
-                class="w-24 h-24 bg-blue-100 rounded-[2rem] flex items-center justify-center text-4xl mx-auto mt-4"
+                class="w-24 h-24 rounded-[2rem] flex items-center justify-center mx-auto mt-4 overflow-hidden bg-white shadow-2xl"
               >
-                ðŸ›ï¸
+                <img
+                  src="./school-logo.jpeg?v=20260422"
+                  alt="Logo SMK Negeri 2 Sragen"
+                  class="w-full h-full object-contain"
+                />
               </div>
               <h3 class="font-black dark:text-white uppercase text-xl">
-                SMKN 2 SRAGEN
+                SMK NEGERI 2 SRAGEN
               </h3>
               <p
-                class="text-xs text-slate-400 font-bold uppercase px-4 leading-relaxed"
+                class="text-[11px] text-slate-500 dark:text-slate-300 font-bold px-2 leading-relaxed"
               >
-                Menjadi rujukan pendidikan vokasi di Indonesia.
+                Sekolah menengah kejuruan negeri di Kabupaten Sragen yang berfokus pada pendidikan vokasi, pembentukan karakter, dan kesiapan kerja lulusan di dunia industri.
               </p>
+              <div class="grid grid-cols-2 gap-3 text-left pt-2">
+                <div class="rounded-[1.5rem] bg-slate-100 dark:bg-slate-900 p-4">
+                  <p class="text-[9px] font-black uppercase text-slate-400">
+                    Status
+                  </p>
+                  <p class="mt-2 text-xs font-black uppercase dark:text-white">
+                    Negeri
+                  </p>
+                </div>
+                <div class="rounded-[1.5rem] bg-slate-100 dark:bg-slate-900 p-4">
+                  <p class="text-[9px] font-black uppercase text-slate-400">
+                    Akreditasi
+                  </p>
+                  <p class="mt-2 text-xs font-black uppercase dark:text-white">
+                    A
+                  </p>
+                </div>
+                <div class="rounded-[1.5rem] bg-slate-100 dark:bg-slate-900 p-4">
+                  <p class="text-[9px] font-black uppercase text-slate-400">
+                    NPSN
+                  </p>
+                  <p class="mt-2 text-xs font-black uppercase dark:text-white">
+                    20312904
+                  </p>
+                </div>
+                <div class="rounded-[1.5rem] bg-slate-100 dark:bg-slate-900 p-4">
+                  <p class="text-[9px] font-black uppercase text-slate-400">
+                    Kepala Sekolah
+                  </p>
+                  <p class="mt-2 text-xs font-black uppercase dark:text-white">
+                    Dr. Sutikno, S.Pd., M.Pd.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div class="glass-card p-6 rounded-[2.5rem] space-y-4">
+              <div>
+                <p class="text-[9px] font-black uppercase text-slate-400">
+                  Identitas Sekolah
+                </p>
+                <h3 class="text-lg font-black uppercase dark:text-white mt-1">
+                  Profil Singkat
+                </h3>
+              </div>
+              <div class="space-y-3 text-[11px] font-bold text-slate-600 dark:text-slate-300 leading-relaxed">
+                <p>
+                  Alamat: Jl. Dr. Sutomo No. 4, Sragen Kulon, Kecamatan Sragen, Kabupaten Sragen, Jawa Tengah 57212.
+                </p>
+                <p>
+                  Telepon: 0271-891316
+                </p>
+                <p>
+                  Email: info@smkn2sragen.sch.id
+                </p>
+                <p>
+                  Website: www.smkn2sragen.sch.id
+                </p>
+                <p>
+                  Sekolah ini berdiri berdasarkan SK Bupati Sragen dengan tanggal pendirian 5 Maret 2002 dan memiliki bangunan sekolah milik pemerintah daerah.
+                </p>
+              </div>
+            </div>
+
+            <div class="glass-card p-6 rounded-[2.5rem] space-y-4">
+              <div>
+                <p class="text-[9px] font-black uppercase text-slate-400">
+                  Bidang Keahlian
+                </p>
+                <h3 class="text-lg font-black uppercase dark:text-white mt-1">
+                  Konsentrasi Vokasi
+                </h3>
+              </div>
+              <div class="flex flex-wrap gap-2">
+                <span class="px-3 py-2 rounded-2xl bg-blue-100 text-blue-600 text-[10px] font-black uppercase">Teknologi Manufaktur dan Rekayasa</span>
+                <span class="px-3 py-2 rounded-2xl bg-blue-100 text-blue-600 text-[10px] font-black uppercase">Teknologi Konstruksi dan Bangunan</span>
+                <span class="px-3 py-2 rounded-2xl bg-blue-100 text-blue-600 text-[10px] font-black uppercase">Energi dan Pertambangan</span>
+                <span class="px-3 py-2 rounded-2xl bg-blue-100 text-blue-600 text-[10px] font-black uppercase">Teknologi Informasi</span>
+              </div>
+              <div class="space-y-2 text-[11px] font-bold text-slate-600 dark:text-slate-300 leading-relaxed">
+                <p>Program keahlian yang ditampilkan pada profil resmi sekolah meliputi:</p>
+                <p>Teknik Otomotif, Teknik Konstruksi dan Perumahan, Desain Pemodelan dan Informasi Bangunan, Teknik Ketenagalistrikan, Teknik Mesin, serta Teknik Jaringan Komputer dan Telekomunikasi.</p>
+              </div>
+            </div>
+
+            <div class="glass-card p-6 rounded-[2.5rem] space-y-4">
+              <div>
+                <p class="text-[9px] font-black uppercase text-slate-400">
+                  Gambaran Sekolah
+                </p>
+                <h3 class="text-lg font-black uppercase dark:text-white mt-1">
+                  Informasi Umum
+                </h3>
+              </div>
+              <div class="space-y-3 text-[11px] font-bold text-slate-600 dark:text-slate-300 leading-relaxed">
+                <p>
+                  SMK Negeri 2 Sragen memiliki fokus pada penguatan kompetensi vokasi, kedisiplinan, kesiapan kerja, dan pengembangan karakter siswa agar siap melanjutkan ke dunia industri maupun pendidikan lanjutan.
+                </p>
+                <p>
+                  Berdasarkan profil resmi sekolah, SMKN 2 Sragen juga telah memiliki Lembaga Sertifikasi Profesi Pihak 1 (LSP P1), sehingga mendukung pengakuan kompetensi siswa secara lebih profesional.
+                </p>
+              </div>
             </div>
           </div>
 
@@ -695,10 +801,10 @@
             >
               <div>
                 <p class="text-[9px] font-black text-slate-400 uppercase">
-                  Laporan Foto
+                  Monitoring Absensi
                 </p>
                 <h3 class="text-lg font-black dark:text-white uppercase">
-                  Kiriman Siswa Terbaru
+                  Siswa Sudah Absen
                 </h3>
               </div>
               <div id="admin-photo-list" class="space-y-3 text-left">
@@ -952,6 +1058,7 @@
       window.adminSelectedClass = "ALL";
       window.studentCatalog = { jurusan: [], classesByJurusan: {} };
       window.attendanceCameraStream = null;
+      window.attendancePromptedDay = "";
 
       let db, auth, appId, userSession;
       let pendingPhotoData = "";
@@ -1106,9 +1213,9 @@
         if (!db || !userSession || window.currentUser.role !== "guru") return;
         if (unsubscribeAdminPhotos) unsubscribeAdminPhotos();
         const photoQuery = query(
-          collection(db, "artifacts", appId, "public", "data", "photo_reports"),
+          collection(db, "artifacts", appId, "public", "data", "attendance_reports"),
           orderBy("timestamp", "desc"),
-          limit(12),
+          limit(80),
         );
         unsubscribeAdminPhotos = onSnapshot(photoQuery, (snapshot) => {
           const reports = [];
@@ -1470,7 +1577,10 @@
 
         const openNativeCamera = () => {
           const input = document.getElementById("attendance-photo-input");
-          if (input) input.click();
+          if (input) {
+            input.removeAttribute("disabled");
+            input.click();
+          }
         };
 
         const openInlineCamera = async () => {
@@ -1494,6 +1604,9 @@
             window.attendanceCameraStream = stream;
             video.srcObject = stream;
             overlay.style.display = "flex";
+            video
+              .play()
+              .catch((playError) => console.error("Video play error:", playError));
             if (status) {
               status.innerText = "Pastikan wajah terlihat jelas di dalam kamera.";
             }
@@ -1505,8 +1618,10 @@
         };
 
         if (navigator.mediaDevices?.getUserMedia) {
+          showNotification("Membuka kamera wajah...", "info");
           openInlineCamera();
         } else {
+          showNotification("Membuka kamera bawaan HP...", "info");
           openNativeCamera();
         }
         return true;
@@ -1573,8 +1688,11 @@
         updatePhotoFeatureState();
         updateAbsenButtonState();
 
+        if (window.currentUser.role === "siswa") {
+          showNotification("Foto wajah tersimpan. Sekarang tekan tombol absen.", "success");
+        }
+
         if (!db || !userSession) {
-          showNotification("Foto wajah tersimpan. Tombol absen sudah aktif.", "success");
           return;
         }
 
@@ -1589,9 +1707,7 @@
           photo: photoData,
           timestamp: Date.now(),
         })
-          .then(() =>
-            showNotification("Foto wajah berhasil dikirim. Sekarang tekan absen.", "success"),
-          )
+          .then(() => {})
           .catch(() =>
             showNotification("Foto tersimpan, tetapi pengiriman ke admin gagal", "error"),
           );
@@ -1602,21 +1718,49 @@
         if (!container) return;
         if (!reports.length) {
           container.innerHTML =
-            '<div class="text-xs font-black uppercase text-slate-400 text-center py-10">Belum ada kiriman foto</div>';
+            '<div class="text-xs font-black uppercase text-slate-400 text-center py-10">Belum ada siswa yang absen aktif</div>';
           return;
         }
-        container.innerHTML = reports
-          .map(
-            (report) => `
+        const now = Date.now();
+        const activeReports = reports
+          .filter((report) => !report.activeUntil || report.activeUntil > now)
+          .sort((a, b) => {
+            const classCompare = String(a.class || "").localeCompare(String(b.class || ""));
+            if (classCompare !== 0) return classCompare;
+            return Number(b.timestamp || 0) - Number(a.timestamp || 0);
+          });
+
+        if (!activeReports.length) {
+          container.innerHTML =
+            '<div class="text-xs font-black uppercase text-slate-400 text-center py-10">Belum ada siswa yang absen aktif</div>';
+          return;
+        }
+
+        let currentClass = "";
+        container.innerHTML = activeReports
+          .map((report) => {
+            const classHeader =
+              report.class !== currentClass
+                ? `<div class="pt-2"><p class="text-[10px] font-black uppercase text-blue-600">${report.class}</p></div>`
+                : "";
+            currentClass = report.class;
+            const untilText = report.activeUntil
+              ? new Date(report.activeUntil).toLocaleTimeString("id-ID", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })
+              : "-";
+            return `
+            ${classHeader}
             <div class="glass-card p-4 rounded-[1.75rem] space-y-3">
               <img src="${report.photo}" class="w-full h-44 object-cover rounded-[1.25rem] bg-slate-100" />
               <div class="space-y-1">
                 <p class="text-xs font-black uppercase dark:text-white">${report.name}</p>
-                <p class="text-[10px] font-bold uppercase text-slate-400">${report.class} â€¢ ABSEN ${report.absenNo}</p>
-                <p class="text-[10px] font-bold uppercase text-blue-600">${new Date(report.timestamp).toLocaleString("id-ID")}</p>
+                <p class="text-[10px] font-bold uppercase text-slate-400">ABSEN ${report.absenNo} • ${report.jurusan}</p>
+                <p class="text-[10px] font-bold uppercase text-emerald-600">Sudah absen • aktif sampai ${untilText}</p>
               </div>
-            </div>`,
-          )
+            </div>`;
+          })
           .join("");
       }
 
@@ -1682,24 +1826,8 @@
           console.error(error);
         }
 
-        const localLogin = attemptLocalLogin(username, password);
-        if (localLogin.success) {
-          window.currentUser = {
-            ...window.currentUser,
-            ...localLogin.user,
-          };
-          startApp(true);
-          showNotification(
-            serverErrorMessage
-              ? "Masuk dengan database lokal karena server belum aktif"
-              : "Masuk dengan database lokal",
-            "info",
-          );
-          return;
-        }
-
         showNotification(
-          serverErrorMessage || "Login gagal. Username atau password tidak cocok.",
+          serverErrorMessage || "Login gagal. Server wajib aktif untuk membatasi 1 akun 1 HP.",
           "error",
         );
       };
@@ -1756,9 +1884,11 @@
               return;
             }
 
-            if (normalizedUser.sessionMode !== "server" || !normalizedUser.sessionToken) {
-              window.currentUser = normalizedUser;
-              startApp(false);
+            if (normalizedUser.role === "siswa" && (!normalizedUser.sessionToken || normalizedUser.sessionMode !== "server")) {
+              localStorage.removeItem("smkn2_live_session");
+              document.getElementById("splash-screen").style.display = "none";
+              document.getElementById("login-screen").classList.remove("hidden");
+              showNotification("Login ulang diperlukan agar 1 akun hanya dipakai 1 HP", "error");
               return;
             }
 
@@ -1786,12 +1916,10 @@
                 startApp(false);
               })
               .catch(() => {
-                window.currentUser = {
-                  ...normalizedUser,
-                  sessionMode: "local",
-                };
-                startApp(false);
-                showNotification("Server tidak terjangkau, sesi lokal dipakai", "info");
+                localStorage.removeItem("smkn2_live_session");
+                document.getElementById("splash-screen").style.display = "none";
+                document.getElementById("login-screen").classList.remove("hidden");
+                showNotification("Server tidak bisa memverifikasi sesi akun", "error");
               });
           } else {
             document.getElementById("splash-screen").style.display = "none";
@@ -1998,6 +2126,7 @@
             second: "2-digit",
           }),
           day: new Date().toLocaleDateString("id-ID"),
+          timestampMs: Date.now(),
         });
         localStorage.setItem("smkn2_logs", JSON.stringify(logs.slice(0, 20)));
         renderHistory();
@@ -2027,10 +2156,13 @@
 
       // FUNGSI CEK ABSEN DAN TOMBOL ABSEN
       window.checkHasAbsenToday = function () {
-        const today = new Date().toLocaleDateString("id-ID");
+        const now = Date.now();
         const logs = JSON.parse(localStorage.getItem("smkn2_logs") || "[]");
         return logs.some(
-          (l) => l.day === today && l.text.includes("Absen masuk sekolah"),
+          (l) =>
+            l.text.includes("Absen masuk sekolah") &&
+            l.timestampMs &&
+            now - Number(l.timestampMs) < 8 * 60 * 60 * 1000,
         );
       };
 
@@ -2098,7 +2230,34 @@
           addHistoryLog(
             "Absen masuk sekolah - " + (late ? "Terlambat" : "Tepat waktu"),
           );
-          showNotification("Berhasil Absen!", "success");
+          const activeUntil = Date.now() + 8 * 60 * 60 * 1000;
+          if (db && userSession && window.currentUser.role === "siswa") {
+            setDoc(
+              doc(
+                db,
+                "artifacts",
+                appId,
+                "public",
+                "data",
+                "attendance_reports",
+                String(window.currentUser.id),
+              ),
+              {
+                name: window.currentUser.name,
+                class: window.currentUser.class,
+                jurusan: window.currentUser.jurusan,
+                absenNo: window.currentUser.absenNo,
+                studentId: window.currentUser.id,
+                lat: window.userPos[0],
+                lng: window.userPos[1],
+                photo: window.currentUser.lastAttendancePhoto || "",
+                timestamp: Date.now(),
+                activeUntil,
+                status: "ACTIVE",
+              },
+            ).catch((error) => console.error(error));
+          }
+          showNotification("Berhasil absen. Status aktif selama 8 jam.", "success");
           updateAbsenButtonState();
         } else {
           showNotification("Gagal! Anda di luar sekolah", "error");
@@ -2184,6 +2343,20 @@
                 }
 
                 updateAbsenButtonState();
+                const today = new Date().toLocaleDateString("id-ID");
+                const hasPhotoToday = window.currentUser.attendancePhotoDay === today;
+                if (
+                  isInside &&
+                  !hasPhotoToday &&
+                  window.attendancePromptedDay !== today &&
+                  !window.checkHasAbsenToday()
+                ) {
+                  window.attendancePromptedDay = today;
+                  showNotification("Masuk area sekolah. Silakan ambil foto wajah dulu.", "info");
+                  setTimeout(() => {
+                    if (window.isInsideSchool) openAttendanceCamera();
+                  }, 700);
+                }
 
                 const myColor = isInside ? "#22c55e" : "#ef4444";
                 const dot = L.divIcon({
@@ -2235,4 +2408,3 @@
     </script>
   </body>
 </html>
-
