@@ -9,5 +9,6 @@ const DB_USER = 'root';
 const DB_PASS = '';
 
 const EXCEL_PATH = __DIR__ . '/../Peserta UTS Gsl X (1).xlsx';
+const PROFILE_EXCEL_PATH = __DIR__ . '/../data siswa foto/DATA KLS X 2025.xlsx';
 const ADMIN_USERNAME = 'admin';
 const ADMIN_PASSWORD = 'smkn2guru';
