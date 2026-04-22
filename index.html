@@ -1,0 +1,2033 @@
+<!doctype html>
+<html lang="id" class="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <title>SMKN 2 Sragen - Aplikasi Absensi Maps</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <script src="./student-db.js?v=20260422"></script>
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              brand: {
+                primary: "#2563eb",
+                secondary: "#4f46e5",
+                accent: "#06b6d4",
+              },
+            },
+          },
+        },
+      };
+    </script>
+
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap");
+      :root {
+        --sab: env(safe-area-inset-bottom, 0px);
+      }
+
+      body {
+        font-family: "Plus Jakarta Sans", sans-serif;
+        -webkit-tap-highlight-color: transparent;
+        overflow: hidden;
+        height: 100vh;
+        width: 100vw;
+        background: #f8fafc;
+      }
+
+      .main-container {
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        background:
+          radial-gradient(
+            circle at top right,
+            rgba(37, 99, 235, 0.08),
+            transparent
+          ),
+          radial-gradient(
+            circle at bottom left,
+            rgba(79, 70, 229, 0.12),
+            transparent
+          );
+      }
+
+      .glass-card {
+        backdrop-filter: blur(20px);
+        background: rgba(255, 255, 255, 0.82);
+        border: 1px solid rgba(255, 255, 255, 0.5);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03);
+      }
+      .dark .glass-card {
+        background: rgba(15, 23, 42, 0.7);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+      }
+
+      #content-area {
+        flex: 1;
+        overflow-y: auto;
+        padding-bottom: 100px;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      .page-content {
+        display: none;
+      }
+      .page-content.active {
+        display: block;
+        animation: fadeIn 0.3s ease-out;
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .bottom-nav {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: calc(80px + var(--sab));
+        background: rgba(255, 255, 255, 0.96);
+        backdrop-filter: blur(25px);
+        display: flex;
+        z-index: 1000;
+        border-top: 1px solid rgba(0, 0, 0, 0.05);
+        padding-bottom: var(--sab);
+      }
+      .dark .bottom-nav {
+        background: rgba(15, 23, 42, 0.96);
+        border-top: 1px solid rgba(255, 255, 255, 0.05);
+      }
+
+      .nav-item {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: #94a3b8;
+        transition: 0.3s;
+        position: relative;
+      }
+      .nav-item.active {
+        color: #2563eb;
+      }
+      .nav-item.active::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        width: 24px;
+        height: 3px;
+        background: #2563eb;
+        border-radius: 0 0 10px 10px;
+      }
+      .nav-item i {
+        font-size: 1.25rem;
+        margin-bottom: 5px;
+      }
+      .nav-item span {
+        font-size: 0.6rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+      }
+
+      #map {
+        height: 350px;
+        width: 100%;
+        border-radius: 2.5rem;
+        border: 8px solid white;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        z-index: 10;
+        position: relative;
+      }
+      .dark #map {
+        border-color: #1e293b;
+      }
+
+      .avatar-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+        max-height: 380px;
+        overflow-y: auto;
+        padding: 15px;
+        background: rgba(0, 0, 0, 0.03);
+        border-radius: 2rem;
+      }
+      .avatar-opt {
+        width: 100%;
+        aspect-ratio: 1;
+        border-radius: 18px;
+        border: 3px solid transparent;
+        cursor: pointer;
+        background: white;
+        transition: 0.2s;
+      }
+      .avatar-opt.selected {
+        border-color: #2563eb;
+        transform: scale(1.08);
+        box-shadow: 0 8px 20px rgba(37, 99, 235, 0.2);
+      }
+
+      .btn-premium {
+        background: linear-gradient(135deg, #2563eb, #4f46e5);
+        color: white;
+        font-weight: 800;
+        box-shadow: 0 12px 28px rgba(37, 99, 235, 0.3);
+      }
+
+      .search-box {
+        position: sticky;
+        top: -1px;
+        z-index: 50;
+        padding: 10px 0;
+        background: transparent;
+      }
+      .log-card {
+        border-left: 6px solid #2563eb;
+        transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .log-card:active {
+        transform: scale(0.97);
+        background: rgba(0, 0, 0, 0.02);
+      }
+
+      .edit-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.65);
+        backdrop-filter: blur(12px);
+        z-index: 2000;
+        display: none;
+        align-items: flex-end;
+      }
+      .edit-sheet {
+        background: white;
+        width: 100%;
+        border-radius: 3rem 3rem 0 0;
+        padding: 2rem;
+        max-height: 90vh;
+        overflow-y: auto;
+        animation: sheetUp 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+      .dark .edit-sheet {
+        background: #0f172a;
+      }
+      @keyframes sheetUp {
+        from {
+          transform: translateY(100%);
+        }
+        to {
+          transform: translateY(0);
+        }
+      }
+
+      #splash-screen {
+        position: fixed;
+        inset: 0;
+        background: #f8fafc;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+      .dark #splash-screen {
+        background: #020617;
+      }
+
+      /* Marker Animation */
+      .leaflet-marker-icon {
+        transition: transform 0.5s linear;
+      }
+
+      /* Notification Animation */
+      @keyframes fadeInDown {
+        from {
+          opacity: 0;
+          transform: translateY(-20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .animate-fade-in-down {
+        animation: fadeInDown 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      }
+
+      .photo-frame {
+        background: linear-gradient(
+          135deg,
+          rgba(37, 99, 235, 0.12),
+          rgba(79, 70, 229, 0.2)
+        );
+      }
+    </style>
+  </head>
+  <body class="bg-slate-50 dark:bg-slate-950 transition-colors duration-500">
+    <!-- TOAST NOTIFICATION CONTAINER -->
+    <div
+      id="toast-container"
+      class="fixed top-4 left-1/2 -translate-x-1/2 z-[9999] flex flex-col gap-2 pointer-events-none w-[90%] max-w-md items-center"
+    ></div>
+
+    <!-- SPLASH SCREEN -->
+    <div id="splash-screen">
+      <div
+        class="w-28 h-28 rounded-[2.5rem] flex items-center justify-center shadow-2xl animate-pulse overflow-hidden bg-white"
+      >
+        <img
+          src="./school-logo.jpeg?v=20260422"
+          alt="Logo Aplikasi Sekolah"
+          class="w-full h-full object-contain"
+        />
+      </div>
+      <h2
+        class="mt-8 font-black text-slate-400 text-[10px] tracking-[0.5em] uppercase"
+      >
+        Loading....
+      </h2>
+    </div>
+
+    <!-- LOGIN SCREEN -->
+    <div
+      id="login-screen"
+      class="hidden min-h-screen flex items-center justify-center p-8 z-[3000] relative bg-slate-50 dark:bg-slate-950"
+    >
+      <div class="w-full max-w-md text-center">
+        <div class="w-28 h-28 mx-auto mb-8">
+          <img
+            src="./school-logo.jpeg?v=20260422"
+            alt="Logo Aplikasi Sekolah"
+            class="w-full h-full object-contain rounded-[2.5rem] shadow-2xl"
+          />
+        </div>
+        <h1
+          class="text-3xl font-black italic dark:text-white uppercase mb-2 tracking-tighter"
+        >
+          Aplikasi Absensi SMK
+        </h1>
+        <p
+          class="text-[9px] text-slate-400 font-bold tracking-[0.4em] uppercase mb-10"
+        >
+          silahkan login terlebih dahulu
+        </p>
+
+        <div class="glass-card p-10 rounded-[3.5rem] shadow-2xl">
+          <div class="space-y-5">
+            <div>
+              <label
+                class="text-[10px] font-black text-slate-400 uppercase mb-3 block tracking-widest"
+                >Username</label
+              >
+              <input
+                type="text"
+                id="login-username"
+                placeholder="Masukan Username"
+                class="w-full p-6 bg-slate-100 dark:bg-slate-900 rounded-3xl outline-none font-black text-center text-lg dark:text-white border-2 border-transparent focus:border-blue-500 transition-all placeholder:opacity-30"
+              />
+            </div>
+            <div>
+              <label
+                class="text-[10px] font-black text-slate-400 uppercase mb-3 block tracking-widest"
+                >Password</label
+              >
+              <input
+                type="password"
+                id="login-password"
+                placeholder="Masukkan password"
+                class="w-full p-6 bg-slate-100 dark:bg-slate-900 rounded-3xl outline-none font-black text-center text-xl dark:text-white border-2 border-transparent focus:border-blue-500 transition-all placeholder:opacity-30"
+              />
+            </div>
+            <button
+              onclick="handleLogin()"
+              class="w-full btn-premium py-6 rounded-3xl shadow-xl active:scale-95 transition-all text-sm tracking-widest font-black"
+            >
+              MASUK
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN APP SCREEN -->
+    <div id="app-screen" class="hidden main-container">
+      <!-- HEADER -->
+      <header class="p-6">
+        <div
+          class="max-w-xl mx-auto glass-card rounded-[2.5rem] p-3.5 flex justify-between items-center shadow-lg"
+        >
+          <div class="flex items-center gap-4 ml-2">
+            <img
+              id="header-avatar"
+              src=""
+              class="w-12 h-12 rounded-2xl bg-white border-2 border-blue-100 shadow-inner object-cover object-center"
+            />
+            <div>
+              <h1
+                id="top-name"
+                class="text-[11px] font-black uppercase dark:text-white truncate max-w-[130px]"
+              >
+                NAMA USER
+              </h1>
+              <p
+                id="top-role"
+                class="text-[8px] text-blue-600 font-black uppercase mt-1 tracking-tighter"
+              >
+                Status: Online
+              </p>
+            </div>
+          </div>
+          <div class="flex gap-2">
+            <button
+              onclick="toggleTheme()"
+              class="w-11 h-11 rounded-2xl bg-slate-100 dark:bg-slate-800 dark:text-white flex items-center justify-center text-lg"
+            >
+              <i id="theme-icon" class="fa-solid fa-moon"></i>
+            </button>
+            <button
+              onclick="logout()"
+              class="w-11 h-11 rounded-2xl bg-red-500 text-white flex items-center justify-center text-lg"
+            >
+              <i class="fa-solid fa-power-off"></i>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <!-- CONTENT AREA -->
+      <div id="content-area">
+        <main class="max-w-xl mx-auto px-6">
+          <!-- TAB: HOME -->
+          <div id="page-home" class="page-content active space-y-8">
+            <!-- SISWA DASHBOARD -->
+            <div id="view-student" class="space-y-6">
+              <div
+                class="glass-card p-6 rounded-[3rem] shadow-sm border-b-8 border-blue-600/10"
+              >
+                <div class="flex items-center gap-6">
+                  <div class="relative">
+                    <img
+                      id="main-avatar"
+                      src=""
+                      class="w-24 h-24 rounded-[2rem] object-cover object-center bg-white shadow-xl border-4 border-white dark:border-slate-800"
+                    />
+                    <div
+                      class="absolute -bottom-1 -right-1 w-8 h-8 bg-green-500 border-4 border-white dark:border-slate-800 rounded-full flex items-center justify-center text-white text-[10px]"
+                    >
+                      <i class="fa-solid fa-satellite-dish animate-pulse"></i>
+                    </div>
+                  </div>
+                  <div>
+                    <h2
+                      id="main-name"
+                      class="text-xl font-black uppercase dark:text-white leading-tight"
+                    >
+                      NAMA LENGKAP
+                    </h2>
+                    <p
+                      id="main-class"
+                      class="text-[10px] text-slate-400 font-bold uppercase italic tracking-widest mt-1"
+                    >
+                      KELAS
+                    </p>
+                    <div class="mt-3 flex flex-wrap gap-2">
+                      <div
+                        id="main-jurusan"
+                        class="inline-block px-3 py-1.5 rounded-lg bg-blue-100 text-blue-600 text-[9px] font-black uppercase tracking-wider"
+                      >
+                        JURUSAN
+                      </div>
+                      <div
+                        id="main-absen"
+                        class="inline-block px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 text-[9px] font-black uppercase tracking-wider"
+                      >
+                        ABSEN
+                      </div>
+                    </div>
+                    <div
+                      id="gps-status"
+                      class="inline-block px-3 py-1.5 rounded-lg bg-red-100 text-red-600 text-[9px] font-black uppercase mt-3 tracking-wider"
+                    >
+                      ● MENGHUBUNGKAN...
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- GURU DASHBOARD -->
+            <div id="view-teacher" class="hidden space-y-6">
+              <div class="grid grid-cols-2 gap-4">
+                <div
+                  class="glass-card p-6 rounded-[2.5rem] border-b-4 border-blue-600"
+                >
+                  <p class="text-[9px] font-black text-slate-400 uppercase">
+                    Siswa Terdeteksi
+                  </p>
+                  <h4
+                    class="text-3xl font-black dark:text-white mt-1"
+                    id="live-count"
+                  >
+                    0 <span class="text-xs opacity-20">/ Live</span>
+                  </h4>
+                </div>
+                <div
+                  class="glass-card p-6 rounded-[2.5rem] border-b-4 border-emerald-500"
+                >
+                  <p class="text-[9px] font-black text-slate-400 uppercase">
+                    Status Server
+                  </p>
+                  <h4 class="text-3xl font-black text-green-500 mt-1">
+                    <i class="fa-solid fa-cloud-arrow-up text-xl"></i> OK
+                  </h4>
+                </div>
+              </div>
+              <div class="glass-card p-6 rounded-[2.5rem] space-y-4">
+                <div class="flex items-center justify-between gap-3">
+                  <div>
+                    <p class="text-[9px] font-black text-slate-400 uppercase">
+                      Filter Monitoring
+                    </p>
+                    <h3 class="text-lg font-black dark:text-white uppercase">
+                      Jurusan dan Kelas
+                    </h3>
+                  </div>
+                  <button
+                    id="btn-admin-reset"
+                    onclick="resetAdminFilters()"
+                    class="px-4 py-2 rounded-2xl bg-slate-100 dark:bg-slate-800 dark:text-white text-[10px] font-black uppercase"
+                  >
+                    Reset
+                  </button>
+                </div>
+                <div id="admin-jurusan-filters" class="flex flex-wrap gap-2"></div>
+                <div id="admin-class-filters" class="flex flex-wrap gap-2"></div>
+                <p
+                  id="admin-filter-summary"
+                  class="text-[10px] font-bold uppercase text-slate-400"
+                >
+                  Menampilkan semua siswa aktif
+                </p>
+              </div>
+            </div>
+
+            <!-- MAP (SHARED MULTIPLAYER) -->
+            <div class="space-y-4">
+              <div class="flex justify-between items-center px-4">
+                <h3
+                  class="text-[10px] font-black text-slate-400 uppercase tracking-widest"
+                >
+                  Live Satelit Radar
+                </h3>
+                <div
+                  id="live-clock"
+                  class="text-[11px] font-black dark:text-white tabular-nums bg-blue-600/10 px-3 py-1 rounded-full text-blue-600"
+                >
+                  00:00:00
+                </div>
+              </div>
+              <div id="map">
+                <button
+                  onclick="recenterMap()"
+                  class="absolute bottom-6 right-6 z-[999] w-14 h-14 bg-white rounded-2xl shadow-2xl text-blue-600 flex items-center justify-center text-2xl active:scale-90 transition-all border-2 border-blue-50"
+                >
+                  <i class="fa-solid fa-crosshairs"></i>
+                </button>
+              </div>
+
+              <!-- TOMBOL ABSEN MANUAL (Pindahan dari atas) -->
+              <button
+                id="btn-absen"
+                onclick="doAbsen()"
+                class="w-full btn-premium py-5 rounded-2xl shadow-xl active:scale-95 transition-all text-xs tracking-widest font-black hidden disabled:active:scale-100 mt-2"
+              >
+                <i class="fa-solid fa-fingerprint mr-2 text-xl"></i> ABSEN
+                SEKARANG
+              </button>
+            </div>
+          </div>
+
+          <!-- TAB: HISTORY -->
+          <div id="page-history" class="page-content space-y-4">
+            <h2 class="text-xl font-black uppercase italic dark:text-white">
+              Log Aktivitas
+            </h2>
+            <div
+              id="history-list"
+              class="glass-card p-6 rounded-[2rem] text-center text-slate-400 py-20 uppercase font-black text-xs"
+            >
+              Belum ada data
+            </div>
+          </div>
+
+          <!-- TAB: SCHOOL -->
+          <div id="page-school" class="page-content space-y-6">
+            <h2 class="text-xl font-black uppercase italic dark:text-white">
+              Tentang Sekolah
+            </h2>
+            <div
+              class="glass-card p-6 rounded-[2.5rem] space-y-4 text-center pb-8"
+            >
+              <div
+                class="w-24 h-24 bg-blue-100 rounded-[2rem] flex items-center justify-center text-4xl mx-auto mt-4"
+              >
+                🏛️
+              </div>
+              <h3 class="font-black dark:text-white uppercase text-xl">
+                SMKN 2 SRAGEN
+              </h3>
+              <p
+                class="text-xs text-slate-400 font-bold uppercase px-4 leading-relaxed"
+              >
+                Menjadi rujukan pendidikan vokasi di Indonesia.
+              </p>
+            </div>
+          </div>
+
+          <!-- TAB: PHOTO -->
+          <div id="page-photo" class="page-content space-y-6">
+            <h2 class="text-xl font-black uppercase italic dark:text-white">
+              Foto Siswa
+            </h2>
+            <div
+              id="student-photo-panel"
+              class="glass-card p-6 rounded-[2.5rem] space-y-5 text-center"
+            >
+              <div class="photo-frame w-48 h-48 rounded-[2.5rem] p-2 mx-auto shadow-xl">
+                <img
+                  id="photo-page-preview"
+                  src=""
+                  class="w-full h-full object-cover rounded-[2rem] bg-white"
+                />
+              </div>
+              <div class="space-y-2">
+                <p class="text-xs font-black uppercase tracking-widest text-blue-600">
+                  Foto Kehadiran Sekolah
+                </p>
+                <p class="text-xs text-slate-400 font-bold uppercase leading-relaxed">
+                  Fitur ini aktif setelah koordinat Anda berada di dalam area sekolah.
+                </p>
+              </div>
+              <div
+                id="photo-status-badge"
+                class="inline-block px-3 py-2 rounded-xl bg-red-100 text-red-600 text-[10px] font-black uppercase tracking-wider"
+              >
+                Kamera belum aktif
+              </div>
+              <label
+                for="attendance-photo-input"
+                id="btn-open-camera"
+                onclick="return openAttendanceCamera(event)"
+                class="block w-full py-4 rounded-2xl bg-slate-200 text-slate-500 text-[10px] uppercase shadow-lg font-black tracking-widest cursor-not-allowed"
+              >
+                Ambil Foto Sekolah
+              </label>
+              <input
+                type="file"
+                id="attendance-photo-input"
+                accept="image/*"
+                capture="environment"
+                class="hidden"
+              />
+              <p
+                id="photo-upload-info"
+                class="text-[10px] text-slate-400 font-bold uppercase"
+              >
+                Foto akan otomatis dikirim ke admin setelah dipilih.
+              </p>
+            </div>
+            <div
+              id="admin-photo-panel"
+              class="glass-card p-6 rounded-[2.5rem] space-y-4 hidden"
+            >
+              <div>
+                <p class="text-[9px] font-black text-slate-400 uppercase">
+                  Laporan Foto
+                </p>
+                <h3 class="text-lg font-black dark:text-white uppercase">
+                  Kiriman Siswa Terbaru
+                </h3>
+              </div>
+              <div id="admin-photo-list" class="space-y-3 text-left">
+                <div class="text-xs font-black uppercase text-slate-400 text-center py-10">
+                  Belum ada kiriman foto
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB: PROFILE -->
+          <div id="page-profile" class="page-content space-y-6">
+            <h2
+              class="text-xl font-black uppercase italic dark:text-white text-center"
+            >
+              Data Diri
+            </h2>
+            <div class="glass-card p-8 rounded-[3rem] text-center shadow-lg">
+              <img
+                id="profile-avatar"
+                src=""
+                class="w-32 h-32 rounded-[2.5rem] mx-auto mb-6 shadow-2xl border-8 border-white dark:border-slate-800 bg-white object-cover object-center"
+              />
+              <h2
+                id="profile-name"
+                class="text-xl font-black dark:text-white uppercase mb-1"
+              >
+                USER
+              </h2>
+              <p
+                id="profile-bio"
+                class="text-[10px] text-slate-500 dark:text-slate-300 font-bold leading-relaxed mb-8 px-2 break-words"
+              >
+                BIO STATUS
+              </p>
+              <div class="grid grid-cols-2 gap-3 text-left mb-8">
+                <div class="rounded-[1.5rem] bg-slate-100 dark:bg-slate-900 p-4">
+                  <p class="text-[9px] font-black uppercase text-slate-400">
+                    Kelas
+                  </p>
+                  <p
+                    id="profile-class"
+                    class="mt-2 text-xs font-black uppercase dark:text-white"
+                  >
+                    -
+                  </p>
+                </div>
+                <div class="rounded-[1.5rem] bg-slate-100 dark:bg-slate-900 p-4">
+                  <p class="text-[9px] font-black uppercase text-slate-400">
+                    No. Absen
+                  </p>
+                  <p
+                    id="profile-absen"
+                    class="mt-2 text-xs font-black uppercase dark:text-white"
+                  >
+                    -
+                  </p>
+                </div>
+              </div>
+
+              <div class="space-y-3 pt-6 border-t dark:border-slate-800">
+                <button
+                  onclick="toggleEditSheet(true)"
+                  class="w-full py-4 btn-premium rounded-2xl text-[10px] uppercase shadow-lg font-black tracking-widest"
+                >
+                  Ubah Foto & Profil
+                </button>
+                <button
+                  onclick="logout()"
+                  class="w-full py-4 bg-slate-100 dark:bg-slate-800 dark:text-slate-400 rounded-2xl text-[10px] font-black uppercase"
+                >
+                  Log Out
+                </button>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+
+      <button
+        id="btn-edit-trigger"
+        onclick="toggleEditSheet(true)"
+        class="hidden"
+      ></button>
+
+      <!-- Navigation Bar -->
+      <nav class="bottom-nav">
+        <div id="nav-home" class="nav-item active" onclick="switchTab('home', this)">
+          <i class="fa-solid fa-home"></i><span>Home</span>
+        </div>
+        <div id="nav-history" class="nav-item" onclick="switchTab('history', this)">
+          <i class="fa-solid fa-list-ul"></i><span>Log</span>
+        </div>
+        <div id="nav-photo" class="nav-item" onclick="switchTab('photo', this)">
+          <i class="fa-solid fa-camera"></i><span>Foto</span>
+        </div>
+        <div id="nav-school" class="nav-item" onclick="switchTab('school', this)">
+          <i class="fa-solid fa-school"></i><span>School</span>
+        </div>
+        <div id="nav-profile" class="nav-item" onclick="switchTab('profile', this)">
+          <i class="fa-solid fa-user"></i><span>Profile</span>
+        </div>
+      </nav>
+    </div>
+
+    <!-- Edit Photo Overlay -->
+    <div
+      id="edit-overlay"
+      class="edit-overlay"
+      onclick="toggleEditSheet(false)"
+    >
+      <div class="edit-sheet" onclick="event.stopPropagation()">
+        <div
+          class="w-10 h-1 bg-slate-200 dark:bg-slate-800 rounded-full mx-auto mb-6"
+        ></div>
+        <h3 class="text-xl font-black uppercase dark:text-white mb-6 italic">
+          Kelola Foto Siswa
+        </h3>
+        <div class="space-y-4">
+          <div class="photo-frame w-40 h-40 rounded-[2.5rem] p-2 mx-auto shadow-xl">
+            <img
+              id="edit-photo-preview"
+              src=""
+              class="w-full h-full object-cover rounded-[2rem] bg-white"
+            />
+          </div>
+          <label
+            for="edit-photo"
+            class="block w-full p-5 bg-slate-100 dark:bg-slate-900 rounded-2xl font-black uppercase dark:text-white outline-none border-2 border-dashed border-blue-300 text-center cursor-pointer"
+          >
+            Pilih Foto Siswa
+          </label>
+          <input type="file" id="edit-photo" accept="image/*" class="hidden" />
+          <p class="text-[10px] text-slate-400 font-bold uppercase text-center">
+            Gunakan file JPG atau PNG agar hasil foto lebih rapi.
+          </p>
+          <input
+            type="text"
+            id="edit-name"
+            placeholder="Ubah Nama"
+            class="w-full p-5 bg-slate-100 dark:bg-slate-900 rounded-2xl font-bold uppercase dark:text-white outline-none border-2 border-transparent focus:border-blue-500"
+          />
+          <input
+            type="text"
+            id="edit-bio"
+            placeholder="Bio Singkat"
+            class="w-full p-5 bg-slate-100 dark:bg-slate-900 rounded-2xl font-bold uppercase dark:text-white outline-none border-2 border-transparent focus:border-blue-500"
+          />
+          <button
+            onclick="saveProfile()"
+            class="w-full py-5 btn-premium rounded-2xl shadow-xl uppercase font-black"
+          >
+            Terapkan Data
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- FIREBASE CLOUD SYSTEM (Untuk Multiplayer) -->
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+      import {
+        getAuth,
+        signInAnonymously,
+        signInWithCustomToken,
+        onAuthStateChanged,
+      } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+      import {
+        getFirestore,
+        collection,
+        doc,
+        setDoc,
+        addDoc,
+        onSnapshot,
+        query,
+        orderBy,
+        limit,
+      } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+      // Global Variables
+      window.currentUser = {
+        role: "siswa",
+        id: "",
+        username: "",
+        name: "",
+        class: "",
+        jurusan: "",
+        absenNo: "",
+        avatar: "char-live-1",
+        photo: "",
+        lastAttendancePhoto: "",
+        bio: "SMKN 2 SRAGEN",
+      };
+      window.map = null;
+      window.myMarker = null;
+      window.userPos = null;
+      window.allMapMarkers = {};
+      window.lastPresenceState = null;
+      window.hasAbsen = false;
+      window.isInsideSchool = false;
+      window.adminSelectedJurusan = "ALL";
+      window.adminSelectedClass = "ALL";
+      window.studentCatalog = { jurusan: [], classesByJurusan: {} };
+
+      let db, auth, appId, userSession;
+      let pendingPhotoData = "";
+      let unsubscribeAdminLocations = null;
+      let unsubscribeAdminPhotos = null;
+
+      // FUNGSI NOTIFIKASI TOAST
+      window.showNotification = function (msg, type = "info") {
+        const container = document.getElementById("toast-container");
+        if (!container) return;
+        const toast = document.createElement("div");
+        const color =
+          type === "success"
+            ? "bg-green-500"
+            : type === "error"
+              ? "bg-red-500"
+              : "bg-blue-600";
+        toast.className = `${color} text-white px-5 py-3 rounded-2xl shadow-2xl text-[10px] font-black uppercase tracking-widest animate-fade-in-down flex items-center gap-3`;
+
+        let icon = "fa-info-circle";
+        if (type === "success") icon = "fa-check-circle";
+        if (type === "error") icon = "fa-exclamation-circle";
+
+        toast.innerHTML = `<i class="fa-solid ${icon} text-lg"></i> <span>${msg}</span>`;
+        container.appendChild(toast);
+
+        setTimeout(() => {
+          toast.style.opacity = "0";
+          toast.style.transform = "translateY(-10px)";
+          toast.style.transition = "all 0.3s ease";
+          setTimeout(() => toast.remove(), 300);
+        }, 4000);
+      };
+
+      // MENGINISIALISASI FIREBASE CLOUD
+      async function initCloud() {
+        try {
+          const fbConfig =
+            typeof __firebase_config !== "undefined"
+              ? JSON.parse(__firebase_config)
+              : null;
+          if (!fbConfig) {
+            console.log("Berjalan di mode offline (tanpa cloud config).");
+            return;
+          }
+
+          appId = typeof __app_id !== "undefined" ? __app_id : "smkn2-live-app";
+          const app = initializeApp(fbConfig);
+          auth = getAuth(app);
+          db = getFirestore(app);
+
+          if (
+            typeof __initial_auth_token !== "undefined" &&
+            __initial_auth_token
+          ) {
+            await signInWithCustomToken(auth, __initial_auth_token);
+          } else {
+            await signInAnonymously(auth);
+          }
+
+          onAuthStateChanged(auth, (user) => {
+            userSession = user;
+            if (user && window.currentUser.id) {
+              listenToOtherUsers();
+              listenToPhotoReports();
+            }
+          });
+        } catch (e) {
+          console.error("Cloud Error", e);
+        }
+      }
+
+      // BACA DATA LOKASI ORANG LAIN SECARA REALTIME
+      function listenToOtherUsers() {
+        if (!db || !userSession) return;
+
+        // CEGAH SISWA MELIHAT LOKASI SISWA LAIN DI PETA
+        if (window.currentUser.role !== "guru") return;
+
+        if (unsubscribeAdminLocations) unsubscribeAdminLocations();
+        const locRef = collection(
+          db,
+          "artifacts",
+          appId,
+          "public",
+          "data",
+          "student_locations",
+        );
+
+        unsubscribeAdminLocations = onSnapshot(locRef, (snapshot) => {
+          let count = 0;
+          const activeIds = new Set();
+          snapshot.forEach((docSnap) => {
+            const data = docSnap.data();
+            const id = docSnap.id;
+
+            if (
+              id === window.currentUser.id &&
+              window.currentUser.role !== "guru"
+            )
+              return;
+            if (Date.now() - data.timestamp > 600000) return;
+            count++;
+            activeIds.add(id);
+
+            const color = data.isInside ? "#22c55e" : "#ef4444";
+
+            const photoThumb = data.photo || getDefaultPhoto();
+
+            if (window.allMapMarkers[id]) {
+              window.allMapMarkers[id].marker.setLatLng([data.lat, data.lng]);
+              window.allMapMarkers[id].marker.setIcon(
+                L.divIcon({
+                  html: `<div class="w-7 h-7 border-4 border-white rounded-full shadow-lg bg-cover" style="background-color:${color}; background-image:url('${photoThumb}')"></div>`,
+                  className: "",
+                }),
+              );
+              window.allMapMarkers[id].data = data;
+            } else {
+              const icon = L.divIcon({
+                html: `<div class="w-7 h-7 border-4 border-white rounded-full shadow-lg bg-cover" style="background-color:${color}; background-image:url('${photoThumb}')"></div>`,
+                className: "",
+              });
+              const m = L.marker([data.lat, data.lng], { icon })
+                .bindPopup(
+                  `<div class="text-center space-y-2"><img src="${photoThumb}" class="w-20 h-20 object-cover rounded-2xl mx-auto"/><p class="font-black text-xs uppercase">${data.name}</p><p class="text-[9px] font-bold text-blue-500">${data.class}</p><p class="text-[9px] font-bold text-slate-400">ABSEN ${data.absenNo || "-"}</p></div>`,
+                );
+              window.allMapMarkers[id] = { marker: m, data };
+            }
+          });
+
+          if (window.currentUser.role === "guru") {
+            const liveCount = document.getElementById("live-count");
+            if (liveCount)
+              liveCount.innerHTML = `${count} <span class="text-xs opacity-20">/ Live</span>`;
+            const info = document.getElementById("info-status");
+            if (info)
+              info.innerText = `Guru memantau ${count} siswa aktif secara real-time`;
+          }
+          Object.keys(window.allMapMarkers).forEach((id) => {
+            if (!activeIds.has(id)) {
+              const entry = window.allMapMarkers[id];
+              if (entry?.marker && window.map.hasLayer(entry.marker)) window.map.removeLayer(entry.marker);
+              delete window.allMapMarkers[id];
+            }
+          });
+          refreshVisibleMarkers();
+        });
+      }
+
+      function listenToPhotoReports() {
+        if (!db || !userSession || window.currentUser.role !== "guru") return;
+        if (unsubscribeAdminPhotos) unsubscribeAdminPhotos();
+        const photoQuery = query(
+          collection(db, "artifacts", appId, "public", "data", "photo_reports"),
+          orderBy("timestamp", "desc"),
+          limit(12),
+        );
+        unsubscribeAdminPhotos = onSnapshot(photoQuery, (snapshot) => {
+          const reports = [];
+          snapshot.forEach((docSnap) => reports.push(docSnap.data()));
+          renderAdminPhotoReports(reports);
+        });
+      }
+
+      // TULIS LOKASI SAYA KE CLOUD
+      window.shareMyLocation = function (lat, lng, isInside) {
+        if (
+          !db ||
+          !userSession ||
+          window.currentUser.role === "guru" ||
+          !window.currentUser.id
+        )
+          return;
+        const docRef = doc(
+          db,
+          "artifacts",
+          appId,
+          "public",
+          "data",
+          "student_locations",
+          window.currentUser.id,
+        );
+        setDoc(docRef, {
+          lat: lat,
+          lng: lng,
+          isInside: isInside,
+          name: window.currentUser.name,
+          class: window.currentUser.class,
+          jurusan: window.currentUser.jurusan,
+          absenNo: window.currentUser.absenNo,
+          avatar: window.currentUser.avatar,
+          photo: window.currentUser.photo || "",
+          timestamp: Date.now(),
+        }).catch((e) => console.error(e));
+      };
+
+      // FUNGSI STANDAR
+      function buildStudentUser(username, record) {
+        return {
+          role: "siswa",
+          id: record.studentId || username,
+          username: record.username || username,
+          name: record.name,
+          class: record.class || "PESERTA UTS KELAS X",
+          jurusan: record.jurusan || "",
+          absenNo: record.absenNo || "",
+          avatar: record.avatar || "char-live-1",
+          photo: record.photo || "",
+          lastAttendancePhoto: record.lastAttendancePhoto || "",
+          bio: record.bio || "PESERTA UTS SMKN 2 SRAGEN",
+        };
+      }
+
+      function normalizeUsername(value) {
+        return (value || "").toLowerCase().replace(/\s+/g, " ").trim();
+      }
+
+      function getAdminAccount() {
+        return (
+          window.ADMIN_ACCOUNT || {
+            username: "admin",
+            password: "smkn2guru",
+            name: "PENGAWAS ADMIN",
+            class: "STAF PENGAJAR",
+            jurusan: "ADMIN",
+            absenNo: "-",
+            bio: "DASHBOARD MONITORING SMKN 2 SRAGEN",
+            avatar: "char-live-admin",
+          }
+        );
+      }
+
+      function buildLocalCatalog() {
+        const classesByJurusan = {};
+        Object.values(window.STUDENT_DB || {}).forEach((student) => {
+          const jurusan = student.jurusan || "LAINNYA";
+          const className = student.class || "BELUM DIATUR";
+          if (!classesByJurusan[jurusan]) {
+            classesByJurusan[jurusan] = [];
+          }
+          if (!classesByJurusan[jurusan].includes(className)) {
+            classesByJurusan[jurusan].push(className);
+          }
+        });
+
+        Object.keys(classesByJurusan).forEach((jurusan) => {
+          classesByJurusan[jurusan].sort();
+        });
+
+        return {
+          jurusan: Object.keys(classesByJurusan).sort(),
+          classesByJurusan,
+        };
+      }
+
+      function attemptLocalLogin(username, password) {
+        if (!window.STUDENT_DB || !Object.keys(window.STUDENT_DB).length) {
+          return {
+            success: false,
+            message:
+              "Database siswa lokal belum termuat di aplikasi ini. Tutup paksa aplikasi lalu buka lagi versi terbaru.",
+          };
+        }
+
+        const admin = getAdminAccount();
+        if (
+          username === normalizeUsername(admin.username) &&
+          password === String(admin.password || "").trim()
+        ) {
+          return {
+            success: true,
+            user: {
+              ...buildAdminUser(),
+              sessionMode: "local",
+            },
+            mode: "local",
+          };
+        }
+
+        const record = window.STUDENT_DB?.[username];
+        if (!record) {
+          return {
+            success: false,
+            message: "Username atau password tidak valid.",
+          };
+        }
+
+        if (String(record.password || "").trim() !== password) {
+          return {
+            success: false,
+            message: "Username atau password tidak valid.",
+          };
+        }
+
+        return {
+          success: true,
+          user: {
+            ...buildStudentUser(username, record),
+            sessionMode: "local",
+          },
+          mode: "local",
+        };
+      }
+
+      function buildAdminUser() {
+        const admin = getAdminAccount();
+        return {
+          role: "guru",
+          id: "GURU-01",
+          username: admin.username,
+          name: admin.name,
+          class: admin.class,
+          jurusan: admin.jurusan || "ADMIN",
+          absenNo: admin.absenNo || "-",
+          avatar: admin.avatar,
+          photo: "",
+          lastAttendancePhoto: "",
+          bio: admin.bio,
+          sessionMode: "local",
+        };
+      }
+
+      function getDefaultPhoto() {
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160"><rect width="160" height="160" rx="36" fill="#dbeafe"/><circle cx="80" cy="60" r="28" fill="#60a5fa"/><path d="M35 138c8-24 25-36 45-36s37 12 45 36" fill="#2563eb"/></svg>`;
+        return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+      }
+
+      function getProfilePhoto() {
+        return window.currentUser.photo || getDefaultPhoto();
+      }
+
+      function getAttendancePreview() {
+        return (
+          window.currentUser.lastAttendancePhoto ||
+          "data:image/svg+xml;charset=UTF-8," +
+            encodeURIComponent(
+              `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160"><rect width="160" height="160" rx="36" fill="#e0f2fe"/><rect x="24" y="28" width="112" height="104" rx="20" fill="#bfdbfe"/><circle cx="58" cy="66" r="14" fill="#60a5fa"/><path d="M38 112l28-26 18 16 20-24 18 34H38z" fill="#2563eb"/></svg>`,
+            )
+        );
+      }
+
+      function updatePhotoPreviews(src) {
+        const editPreview = document.getElementById("edit-photo-preview");
+        const pagePreview = document.getElementById("photo-page-preview");
+        if (editPreview) editPreview.src = src;
+        if (pagePreview) pagePreview.src = getAttendancePreview();
+      }
+
+      function getJurusanList() {
+        return window.studentCatalog.jurusan || [];
+      }
+
+      function getClassListByJurusan(jurusan) {
+        if (jurusan === "ALL") {
+          return [
+            ...new Set(
+              Object.values(window.studentCatalog.classesByJurusan || {}).flat(),
+            ),
+          ].sort();
+        }
+        return window.studentCatalog.classesByJurusan?.[jurusan] || [];
+      }
+
+      function renderFilterButtons(containerId, items, activeValue, onClickName) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        container.innerHTML = items
+          .map((item) => {
+            const selected = item.value === activeValue;
+            const classes = selected
+              ? "bg-blue-600 text-white shadow-lg"
+              : "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-300";
+            return `<button onclick="${onClickName}('${item.value.replace(/'/g, "\\'")}')" class="px-4 py-2 rounded-2xl text-[10px] font-black uppercase ${classes}">${item.label}</button>`;
+          })
+          .join("");
+      }
+
+      function updateAdminFilterSummary() {
+        const summary = document.getElementById("admin-filter-summary");
+        if (!summary) return;
+        const jurusanText =
+          window.adminSelectedJurusan === "ALL" ? "semua jurusan" : window.adminSelectedJurusan;
+        const classText =
+          window.adminSelectedClass === "ALL" ? "semua kelas" : window.adminSelectedClass;
+        summary.innerText = `Menampilkan ${jurusanText} - ${classText}`;
+      }
+
+      function renderAdminFilters() {
+        if (window.currentUser.role !== "guru") return;
+        renderFilterButtons(
+          "admin-jurusan-filters",
+          [{ value: "ALL", label: "Semua Jurusan" }, ...getJurusanList().map((jurusan) => ({ value: jurusan, label: jurusan }))],
+          window.adminSelectedJurusan,
+          "selectAdminJurusan",
+        );
+        renderFilterButtons(
+          "admin-class-filters",
+          [{ value: "ALL", label: "Semua Kelas" }, ...getClassListByJurusan(window.adminSelectedJurusan).map((kelas) => ({ value: kelas, label: kelas }))],
+          window.adminSelectedClass,
+          "selectAdminClass",
+        );
+        updateAdminFilterSummary();
+      }
+
+      async function loadStudentCatalog() {
+        try {
+          const response = await fetch("./api/catalog.php", {
+            headers: { Accept: "application/json" },
+          });
+          if (!response.ok) throw new Error("Gagal mengambil katalog siswa");
+          const result = await response.json();
+          if (!result.success) throw new Error(result.message || "Katalog tidak tersedia");
+          window.studentCatalog = result.catalog || {
+            jurusan: [],
+            classesByJurusan: {},
+          };
+          renderAdminFilters();
+        } catch (error) {
+          console.error(error);
+          window.studentCatalog = buildLocalCatalog();
+          renderAdminFilters();
+        }
+      }
+
+      window.selectAdminJurusan = function (jurusan) {
+        window.adminSelectedJurusan = jurusan;
+        window.adminSelectedClass = "ALL";
+        renderAdminFilters();
+        refreshVisibleMarkers();
+      };
+
+      window.selectAdminClass = function (kelas) {
+        window.adminSelectedClass = kelas;
+        renderAdminFilters();
+        refreshVisibleMarkers();
+      };
+
+      window.resetAdminFilters = function () {
+        window.adminSelectedJurusan = "ALL";
+        window.adminSelectedClass = "ALL";
+        renderAdminFilters();
+        refreshVisibleMarkers();
+      };
+
+      function shouldShowMarker(data) {
+        if (window.currentUser.role !== "guru") return true;
+        const matchJurusan =
+          window.adminSelectedJurusan === "ALL" || data.jurusan === window.adminSelectedJurusan;
+        const matchClass =
+          window.adminSelectedClass === "ALL" || data.class === window.adminSelectedClass;
+        return matchJurusan && matchClass;
+      }
+
+      function refreshVisibleMarkers() {
+        if (window.currentUser.role !== "guru") return;
+        Object.values(window.allMapMarkers).forEach((entry) => {
+          if (!entry?.marker || !entry?.data) return;
+          if (shouldShowMarker(entry.data)) {
+            if (!window.map.hasLayer(entry.marker)) entry.marker.addTo(window.map);
+          } else if (window.map.hasLayer(entry.marker)) {
+            window.map.removeLayer(entry.marker);
+          }
+        });
+      }
+
+      function updatePhotoFeatureState() {
+        const badge = document.getElementById("photo-status-badge");
+        const button = document.getElementById("btn-open-camera");
+        if (!badge || !button) return;
+        if (window.currentUser.role === "guru") return;
+        if (window.isInsideSchool) {
+          badge.className =
+            "inline-block px-3 py-2 rounded-xl bg-green-100 text-green-600 text-[10px] font-black uppercase tracking-wider";
+          badge.innerText = "Kamera aktif di area sekolah";
+          button.className =
+            "block w-full py-4 rounded-2xl btn-premium text-[10px] uppercase shadow-lg font-black tracking-widest cursor-pointer";
+        } else {
+          badge.className =
+            "inline-block px-3 py-2 rounded-xl bg-red-100 text-red-600 text-[10px] font-black uppercase tracking-wider";
+          badge.innerText = "Kamera belum aktif";
+          button.className =
+            "block w-full py-4 rounded-2xl bg-slate-200 text-slate-500 text-[10px] uppercase shadow-lg font-black tracking-widest cursor-not-allowed";
+        }
+      }
+
+      window.openAttendanceCamera = function (event) {
+        if (window.currentUser.role === "guru") {
+          event.preventDefault();
+          return false;
+        }
+        if (!window.isInsideSchool) {
+          event.preventDefault();
+          showNotification("Masuk area sekolah dulu untuk mengaktifkan kamera", "error");
+          return false;
+        }
+        return true;
+      };
+
+      function compressImage(file, callback) {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const img = new Image();
+          img.onload = () => {
+            const maxWidth = 720;
+            const scale = Math.min(1, maxWidth / img.width);
+            const canvas = document.createElement("canvas");
+            canvas.width = Math.round(img.width * scale);
+            canvas.height = Math.round(img.height * scale);
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            callback(canvas.toDataURL("image/jpeg", 0.65));
+          };
+          img.src = String(reader.result || "");
+        };
+        reader.readAsDataURL(file);
+      }
+
+      function renderAdminPhotoReports(reports) {
+        const container = document.getElementById("admin-photo-list");
+        if (!container) return;
+        if (!reports.length) {
+          container.innerHTML =
+            '<div class="text-xs font-black uppercase text-slate-400 text-center py-10">Belum ada kiriman foto</div>';
+          return;
+        }
+        container.innerHTML = reports
+          .map(
+            (report) => `
+            <div class="glass-card p-4 rounded-[1.75rem] space-y-3">
+              <img src="${report.photo}" class="w-full h-44 object-cover rounded-[1.25rem] bg-slate-100" />
+              <div class="space-y-1">
+                <p class="text-xs font-black uppercase dark:text-white">${report.name}</p>
+                <p class="text-[10px] font-bold uppercase text-slate-400">${report.class} • ABSEN ${report.absenNo}</p>
+                <p class="text-[10px] font-bold uppercase text-blue-600">${new Date(report.timestamp).toLocaleString("id-ID")}</p>
+              </div>
+            </div>`,
+          )
+          .join("");
+      }
+
+      function normalizeSavedUser(savedUser) {
+        if (!savedUser) return null;
+        if (savedUser.role === "guru") {
+          return { ...buildAdminUser(), ...savedUser };
+        }
+        const dbRecord =
+          window.STUDENT_DB?.[normalizeUsername(savedUser.username || savedUser.name || "")] ||
+          null;
+        return {
+          role: "siswa",
+          id: savedUser.id || "",
+          username: savedUser.username || dbRecord?.username || "",
+          name: savedUser.name || dbRecord?.name || "",
+          class: savedUser.class || dbRecord?.class || "",
+          jurusan: savedUser.jurusan || dbRecord?.jurusan || "",
+          absenNo: savedUser.absenNo || dbRecord?.absenNo || "",
+          avatar: savedUser.avatar || dbRecord?.avatar || "char-live-1",
+          photo: savedUser.photo || dbRecord?.photo || "",
+          lastAttendancePhoto: savedUser.lastAttendancePhoto || "",
+          sessionToken: savedUser.sessionToken || "",
+          sessionMode: savedUser.sessionMode || (savedUser.sessionToken ? "server" : "local"),
+          bio: savedUser.bio || dbRecord?.bio || "PESERTA UTS SMKN 2 SRAGEN",
+        };
+      }
+
+      window.handleLogin = async function () {
+        const usernameInput = document.getElementById("login-username");
+        const passwordInput = document.getElementById("login-password");
+        const username = normalizeUsername(usernameInput.value);
+        const password = passwordInput.value.trim();
+
+        if (!username || !password) {
+          showNotification("Username dan password wajib diisi", "error");
+          return;
+        }
+
+        let serverErrorMessage = "";
+        try {
+          const response = await fetch("./api/login.php", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Accept: "application/json" },
+            body: JSON.stringify({ username, password }),
+          });
+
+          const result = await response.json();
+          if (response.ok && result.success) {
+            window.currentUser = {
+              ...window.currentUser,
+              ...result.user,
+              photo: result.user.photo || "",
+              lastAttendancePhoto: result.user.lastAttendancePhoto || "",
+              sessionMode: "server",
+            };
+            startApp(true);
+            return;
+          }
+          serverErrorMessage = result.message || "";
+        } catch (error) {
+          console.error(error);
+        }
+
+        const localLogin = attemptLocalLogin(username, password);
+        if (localLogin.success) {
+          window.currentUser = {
+            ...window.currentUser,
+            ...localLogin.user,
+          };
+          startApp(true);
+          showNotification(
+            serverErrorMessage
+              ? "Masuk dengan database lokal karena server belum aktif"
+              : "Masuk dengan database lokal",
+            "info",
+          );
+          return;
+        }
+
+        showNotification(
+          serverErrorMessage || "Login gagal. Username atau password tidak cocok.",
+          "error",
+        );
+      };
+
+      function startApp(shouldSave) {
+        if (shouldSave)
+          localStorage.setItem(
+            "smkn2_live_session",
+            JSON.stringify(window.currentUser),
+          );
+
+        document.getElementById("splash-screen").style.display = "none";
+        document.getElementById("login-screen").classList.add("hidden");
+        document.getElementById("app-screen").classList.remove("hidden");
+
+        if (window.currentUser.role === "guru") {
+          window.adminSelectedJurusan = "ALL";
+          window.adminSelectedClass = "ALL";
+          document.getElementById("view-student").classList.add("hidden");
+          document.getElementById("view-teacher").classList.remove("hidden");
+          const editBtn = document.getElementById("btn-edit-trigger");
+          if (editBtn) editBtn.classList.add("hidden");
+          document.getElementById("top-role").innerText = "Dashboard Admin";
+        } else {
+          document.getElementById("view-student").classList.remove("hidden");
+          document.getElementById("view-teacher").classList.add("hidden");
+          document.getElementById("top-role").innerText =
+            `${window.currentUser.class} • Absen ${window.currentUser.absenNo}`;
+        }
+
+        updateUIVisuals();
+        renderHistory();
+        updateAbsenButtonState();
+        initMap();
+        initCloud();
+
+        setInterval(() => {
+          const clock = document.getElementById("live-clock");
+          if (clock)
+            clock.innerText = new Date().toLocaleTimeString("id-ID", {
+              hour12: false,
+            });
+        }, 1000);
+      }
+
+      window.onload = function () {
+        setTimeout(() => {
+          const savedUser = localStorage.getItem("smkn2_live_session");
+          if (savedUser) {
+            const normalizedUser = normalizeSavedUser(JSON.parse(savedUser));
+            if (normalizedUser.role === "guru") {
+              window.currentUser = normalizedUser;
+              startApp(false);
+              return;
+            }
+
+            if (normalizedUser.sessionMode !== "server" || !normalizedUser.sessionToken) {
+              window.currentUser = normalizedUser;
+              startApp(false);
+              return;
+            }
+
+            fetch(
+              `./api/session.php?studentId=${encodeURIComponent(normalizedUser.id)}&sessionToken=${encodeURIComponent(normalizedUser.sessionToken || "")}&role=${encodeURIComponent(normalizedUser.role)}`,
+              { headers: { Accept: "application/json" } },
+            )
+              .then((response) => response.json().then((body) => ({ ok: response.ok, body })))
+              .then(({ ok, body }) => {
+                if (!ok || !body.success) {
+                  localStorage.removeItem("smkn2_live_session");
+                  document.getElementById("splash-screen").style.display = "none";
+                  document.getElementById("login-screen").classList.remove("hidden");
+                  showNotification("Sesi akun sudah dipakai di perangkat lain", "error");
+                  return;
+                }
+                window.currentUser = {
+                  ...normalizedUser,
+                  ...body.user,
+                  photo: normalizedUser.photo || body.user.photo || "",
+                  lastAttendancePhoto:
+                    normalizedUser.lastAttendancePhoto || body.user.lastAttendancePhoto || "",
+                  sessionToken: body.user.sessionToken || normalizedUser.sessionToken || "",
+                };
+                startApp(false);
+              })
+              .catch(() => {
+                window.currentUser = {
+                  ...normalizedUser,
+                  sessionMode: "local",
+                };
+                startApp(false);
+                showNotification("Server tidak terjangkau, sesi lokal dipakai", "info");
+              });
+          } else {
+            document.getElementById("splash-screen").style.display = "none";
+            document.getElementById("login-screen").classList.remove("hidden");
+          }
+        }, 1500);
+
+        ["login-username", "login-password"].forEach((id) => {
+          const input = document.getElementById(id);
+          if (input) {
+            input.addEventListener("keydown", (event) => {
+              if (event.key === "Enter") handleLogin();
+            });
+          }
+        });
+
+        const photoInput = document.getElementById("edit-photo");
+        if (photoInput) {
+          photoInput.addEventListener("change", (event) => {
+            const file = event.target.files?.[0];
+            if (!file) return;
+            if (!file.type.startsWith("image/")) {
+              showNotification("File harus berupa gambar", "error");
+              event.target.value = "";
+              return;
+            }
+            if (file.size > 2 * 1024 * 1024) {
+              showNotification("Ukuran foto maksimal 2 MB", "error");
+              event.target.value = "";
+              return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = () => {
+              pendingPhotoData = String(reader.result || "");
+              const preview = document.getElementById("edit-photo-preview");
+              if (preview) preview.src = pendingPhotoData || getDefaultPhoto();
+            };
+            reader.readAsDataURL(file);
+          });
+        }
+
+        const attendancePhotoInput = document.getElementById("attendance-photo-input");
+        if (attendancePhotoInput) {
+          attendancePhotoInput.addEventListener("change", (event) => {
+            const file = event.target.files?.[0];
+            if (!file) return;
+            handleAttendancePhoto(file);
+            event.target.value = "";
+          });
+        }
+      };
+
+      window.logout = function () {
+        const currentSession = {
+          studentId: window.currentUser.id || "",
+          sessionToken: window.currentUser.sessionToken || "",
+          role: window.currentUser.role || "",
+        };
+        localStorage.removeItem("smkn2_live_session");
+
+        if (
+          currentSession.role === "siswa" &&
+          currentSession.sessionMode === "server" &&
+          currentSession.sessionToken
+        ) {
+          fetch("./api/logout.php", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Accept: "application/json" },
+            body: JSON.stringify(currentSession),
+          }).finally(() => location.reload());
+          return;
+        }
+
+        location.reload();
+      };
+
+      function updateUIVisuals() {
+        const u = window.currentUser;
+        const photoUrl = getProfilePhoto();
+        document.getElementById("header-avatar").src = photoUrl;
+        document.getElementById("main-avatar").src = photoUrl;
+        document.getElementById("profile-avatar").src = photoUrl;
+        updatePhotoPreviews(photoUrl);
+
+        document.getElementById("top-name").innerText = u.name;
+        document.getElementById("main-name").innerText = u.name;
+        document.getElementById("main-class").innerText = u.class;
+        document.getElementById("main-jurusan").innerText =
+          u.jurusan ? `Jurusan ${u.jurusan}` : "Jurusan -";
+        document.getElementById("main-absen").innerText =
+          u.absenNo ? `Absen ${u.absenNo}` : "Absen -";
+        document.getElementById("profile-name").innerText = u.name;
+        document.getElementById("profile-bio").innerText = u.bio;
+        document.getElementById("profile-class").innerText = u.class || "-";
+        document.getElementById("profile-absen").innerText = u.absenNo || "-";
+
+        const isAdmin = u.role === "guru";
+        const navHistory = document.getElementById("nav-history");
+        const navSchool = document.getElementById("nav-school");
+        const studentPhotoPanel = document.getElementById("student-photo-panel");
+        const adminPhotoPanel = document.getElementById("admin-photo-panel");
+        if (navHistory) navHistory.style.display = isAdmin ? "none" : "flex";
+        if (navSchool) navSchool.style.display = isAdmin ? "none" : "flex";
+        if (studentPhotoPanel) studentPhotoPanel.classList.toggle("hidden", isAdmin);
+        if (adminPhotoPanel) adminPhotoPanel.classList.toggle("hidden", !isAdmin);
+        updatePhotoFeatureState();
+        if (isAdmin) {
+          if (!window.studentCatalog.jurusan.length) loadStudentCatalog();
+          renderAdminFilters();
+        }
+      }
+
+      window.switchTab = function (id, el) {
+        document
+          .querySelectorAll(".nav-item")
+          .forEach((i) => i.classList.remove("active"));
+        el.classList.add("active");
+        document
+          .querySelectorAll(".page-content")
+          .forEach((p) => p.classList.remove("active"));
+        document.getElementById(`page-${id}`).classList.add("active");
+        document.getElementById("content-area").scrollTo(0, 0);
+        if (id === "home" && window.map)
+          setTimeout(() => window.map.invalidateSize(), 300);
+      };
+
+      window.toggleEditSheet = function (show) {
+        document.getElementById("edit-overlay").style.display = show
+          ? "flex"
+          : "none";
+        if (show) {
+          pendingPhotoData = window.currentUser.photo || "";
+          document.getElementById("edit-name").value = window.currentUser.name;
+          document.getElementById("edit-bio").value = window.currentUser.bio;
+          document.getElementById("edit-photo").value = "";
+          document.getElementById("edit-photo-preview").src =
+            pendingPhotoData || getDefaultPhoto();
+        }
+      };
+
+      window.saveProfile = function () {
+        const n = document
+          .getElementById("edit-name")
+          .value.toUpperCase()
+          .trim();
+        const b = document
+          .getElementById("edit-bio")
+          .value.toUpperCase()
+          .trim();
+        if (n) window.currentUser.name = n;
+        if (b) window.currentUser.bio = b;
+        window.currentUser.photo = pendingPhotoData || window.currentUser.photo || "";
+        localStorage.setItem(
+          "smkn2_live_session",
+          JSON.stringify(window.currentUser),
+        );
+        updateUIVisuals();
+        if (window.userPos && window.map) {
+          const isInside =
+            window.map.distance(window.userPos, [-7.4257, 111.0087]) < 200;
+          window.shareMyLocation(
+            window.userPos[0],
+            window.userPos[1],
+            isInside,
+          );
+        }
+        window.toggleEditSheet(false);
+        showNotification("Foto dan profil berhasil diperbarui", "success");
+      };
+
+      function handleAttendancePhoto(file) {
+        if (window.currentUser.role === "guru") return;
+        if (!window.isInsideSchool || !window.userPos) {
+          showNotification("Foto hanya bisa dikirim saat berada di sekolah", "error");
+          return;
+        }
+        if (!file.type.startsWith("image/")) {
+          showNotification("File harus berupa gambar", "error");
+          return;
+        }
+        if (file.size > 5 * 1024 * 1024) {
+          showNotification("Ukuran foto maksimal 5 MB", "error");
+          return;
+        }
+
+        compressImage(file, (photoData) => {
+          window.currentUser.lastAttendancePhoto = photoData;
+          localStorage.setItem(
+            "smkn2_live_session",
+            JSON.stringify(window.currentUser),
+          );
+          const preview = document.getElementById("photo-page-preview");
+          if (preview) preview.src = photoData;
+          addHistoryLog("Mengirim foto kehadiran ke admin");
+
+          if (!db || !userSession) {
+            showNotification("Cloud belum aktif, foto belum terkirim ke admin", "error");
+            return;
+          }
+
+          addDoc(collection(db, "artifacts", appId, "public", "data", "photo_reports"), {
+            name: window.currentUser.name,
+            class: window.currentUser.class,
+            jurusan: window.currentUser.jurusan,
+            absenNo: window.currentUser.absenNo,
+            studentId: window.currentUser.id,
+            lat: window.userPos[0],
+            lng: window.userPos[1],
+            photo: photoData,
+            timestamp: Date.now(),
+          })
+            .then(() => showNotification("Foto berhasil dikirim ke admin", "success"))
+            .catch(() => showNotification("Gagal mengirim foto ke admin", "error"));
+        });
+      }
+
+      function addHistoryLog(text) {
+        const box = document.getElementById("history-list");
+        if (!box) return;
+        const today = new Date().toLocaleDateString("id-ID");
+        const logs = JSON.parse(
+          localStorage.getItem("smkn2_logs") || "[]",
+        ).filter((l) => l.day === today);
+        logs.unshift({
+          text,
+          time: new Date().toLocaleTimeString("id-ID", {
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+          }),
+          day: new Date().toLocaleDateString("id-ID"),
+        });
+        localStorage.setItem("smkn2_logs", JSON.stringify(logs.slice(0, 20)));
+        renderHistory();
+      }
+
+      function renderHistory() {
+        const box = document.getElementById("history-list");
+        if (!box) return;
+        const today = new Date().toLocaleDateString("id-ID");
+        const logs = JSON.parse(
+          localStorage.getItem("smkn2_logs") || "[]",
+        ).filter((l) => l.day === today);
+        if (!logs.length) {
+          box.innerHTML = "Belum ada data";
+          return;
+        }
+        box.className = "space-y-3";
+        box.innerHTML =
+          `<div class='text-[10px] font-black text-slate-400 uppercase mb-3'>Rekap Hari Ini: ${logs.length} aktivitas</div>` +
+          logs
+            .map(
+              (l) =>
+                `<div class="glass-card p-4 rounded-2xl text-left"><div class="text-xs font-black dark:text-white">${l.text}</div><div class="text-[10px] text-slate-400">${l.time}</div></div>`,
+            )
+            .join("");
+      }
+
+      // FUNGSI CEK ABSEN DAN TOMBOL ABSEN
+      window.checkHasAbsenToday = function () {
+        const today = new Date().toLocaleDateString("id-ID");
+        const logs = JSON.parse(localStorage.getItem("smkn2_logs") || "[]");
+        return logs.some(
+          (l) => l.day === today && l.text.includes("Absen masuk sekolah"),
+        );
+      };
+
+      function updateAbsenButtonState() {
+        window.hasAbsen = window.checkHasAbsenToday();
+        const btn = document.getElementById("btn-absen");
+        if (btn && window.hasAbsen) {
+          btn.innerHTML = `<i class="fa-solid fa-check-circle mr-2 text-lg"></i> SUDAH ABSEN`;
+          btn.disabled = true;
+          btn.classList.add("opacity-50", "cursor-not-allowed");
+          btn.classList.remove("btn-premium");
+          btn.classList.add(
+            "bg-slate-300",
+            "text-slate-500",
+            "dark:bg-slate-800",
+            "dark:text-slate-400",
+          );
+        }
+      }
+
+      window.doAbsen = function () {
+        if (!window.userPos) {
+          showNotification("Lokasi belum ditemukan!", "error");
+          return;
+        }
+        const dist = window.map.distance(window.userPos, [-7.4257, 111.0087]);
+        if (dist < 200) {
+          const now = new Date();
+          const late =
+            now.getHours() > 7 || (now.getHours() == 7 && now.getMinutes() > 0);
+
+          addHistoryLog(
+            "Absen masuk sekolah - " + (late ? "Terlambat" : "Tepat waktu"),
+          );
+          showNotification("Berhasil Absen!", "success");
+          updateAbsenButtonState();
+        } else {
+          showNotification("Gagal! Anda di luar sekolah", "error");
+        }
+      };
+
+      function initMap() {
+        if (window.map) return;
+        window.map = L.map("map", {
+          zoomControl: false,
+          attributionControl: false,
+        }).setView([-7.4257, 111.0087], 17);
+        L.tileLayer(
+          "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+        ).addTo(window.map);
+
+        L.polygon(
+          [
+            [-7.424593, 111.008093],
+            [-7.424446, 111.00904],
+            [-7.426817, 111.009361],
+            [-7.42694, 111.008423],
+          ],
+          {
+            color: "#2563eb",
+            weight: 2,
+            fillOpacity: 0.15,
+          },
+        ).addTo(window.map);
+
+        if (navigator.geolocation) {
+          navigator.geolocation.watchPosition(
+            (pos) => {
+              window.userPos = [pos.coords.latitude, pos.coords.longitude];
+              const dist = window.map.distance(
+                window.userPos,
+                [-7.4257, 111.0087],
+              );
+              const isInside = dist < 200; // RADIUS 200 METER
+              window.isInsideSchool = isInside;
+              updatePhotoFeatureState();
+
+              // LOGIKA NOTIFIKASI OTOMATIS
+              if (window.lastPresenceState === null) {
+                window.lastPresenceState = isInside;
+                if (!isInside) {
+                  showNotification("Anda di luar sekolah", "error");
+                  addHistoryLog("Terdeteksi di luar sekolah");
+                } else {
+                  showNotification(
+                    "Anda berada di dalam area sekolah",
+                    "success",
+                  );
+                }
+              } else if (window.lastPresenceState !== isInside) {
+                window.lastPresenceState = isInside;
+                if (isInside) {
+                  showNotification(
+                    "Anda berada di dalam area sekolah",
+                    "success",
+                  );
+                } else {
+                  showNotification("Anda di luar sekolah", "error");
+                  addHistoryLog("Keluar area sekolah");
+                }
+              }
+
+              const badge = document.getElementById("gps-status");
+              const btnAbsen = document.getElementById("btn-absen");
+
+              // UPDATE UI LOKAL
+              if (window.currentUser.role === "siswa") {
+                if (isInside) {
+                  badge.innerText = "● DI DALAM SEKOLAH";
+                  badge.className =
+                    "inline-block px-3 py-1.5 rounded-lg bg-green-100 text-green-600 text-[9px] font-black uppercase mb-2";
+                  // Tampilkan tombol absen jika belum absen
+                  if (btnAbsen) btnAbsen.classList.remove("hidden");
+                } else {
+                  badge.innerText = "● DI LUAR SEKOLAH";
+                  badge.className =
+                    "inline-block px-3 py-1.5 rounded-lg bg-red-100 text-red-600 text-[9px] font-black uppercase mb-2";
+                  // Sembunyikan tombol absen jika di luar
+                  if (btnAbsen) btnAbsen.classList.add("hidden");
+                }
+
+                const myColor = isInside ? "#22c55e" : "#ef4444";
+                const dot = L.divIcon({
+                  html: `<div class="w-6 h-6 border-4 border-white rounded-full shadow-2xl scale-125" style="background-color: ${myColor}"></div>`,
+                  className: "",
+                });
+
+                if (!window.myMarker)
+                  window.myMarker = L.marker(window.userPos, {
+                    icon: dot,
+                  }).addTo(window.map);
+                else window.myMarker.setLatLng(window.userPos).setIcon(dot);
+              } else {
+                refreshVisibleMarkers();
+              }
+
+              // KIRIM KE CLOUD
+              window.shareMyLocation(
+                window.userPos[0],
+                window.userPos[1],
+                isInside,
+              );
+            },
+            null,
+            { enableHighAccuracy: true },
+          );
+        }
+      }
+
+      window.recenterMap = function () {
+        if (window.currentUser.role === "guru") {
+          const visibleMarkers = Object.values(window.allMapMarkers)
+            .filter((entry) => entry?.marker && window.map.hasLayer(entry.marker))
+            .map((entry) => entry.marker.getLatLng());
+          if (visibleMarkers.length) {
+            window.map.fitBounds(L.latLngBounds(visibleMarkers), { padding: [40, 40] });
+            return;
+          }
+        }
+        if (window.userPos) window.map.flyTo(window.userPos, 18);
+      };
+      window.toggleTheme = function () {
+        document.documentElement.classList.toggle("dark");
+        document.getElementById("theme-icon").className =
+          document.documentElement.classList.contains("dark")
+            ? "fa-solid fa-sun"
+            : "fa-solid fa-moon";
+      };
+    </script>
+  </body>
+</html>
