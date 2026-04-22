@@ -1828,6 +1828,22 @@
           console.error(error);
         }
 
+        const localLogin = attemptLocalLogin(username, password);
+        if (localLogin.success) {
+          window.currentUser = {
+            ...window.currentUser,
+            ...localLogin.user,
+          };
+          startApp(true);
+          showNotification(
+            serverReachable
+              ? "Masuk dengan database lokal"
+              : "Masuk dengan database lokal karena server tidak terhubung",
+            "info",
+          );
+          return;
+        }
+
         showNotification(
           serverReachable
             ? serverErrorMessage || "Username atau password tidak cocok."
@@ -1888,11 +1904,9 @@
               return;
             }
 
-            if (normalizedUser.role === "siswa" && (!normalizedUser.sessionToken || normalizedUser.sessionMode !== "server")) {
-              localStorage.removeItem("smkn2_live_session");
-              document.getElementById("splash-screen").style.display = "none";
-              document.getElementById("login-screen").classList.remove("hidden");
-              showNotification("Login ulang diperlukan karena sesi server tidak lengkap", "error");
+            if (normalizedUser.sessionMode !== "server" || !normalizedUser.sessionToken) {
+              window.currentUser = normalizedUser;
+              startApp(false);
               return;
             }
 
@@ -1923,10 +1937,12 @@
                 startApp(false);
               })
               .catch(() => {
-                localStorage.removeItem("smkn2_live_session");
-                document.getElementById("splash-screen").style.display = "none";
-                document.getElementById("login-screen").classList.remove("hidden");
-                showNotification("Server sesi tidak terhubung. Silakan login ulang.", "error");
+                window.currentUser = {
+                  ...normalizedUser,
+                  sessionMode: "local",
+                };
+                startApp(false);
+                showNotification("Server sesi tidak terhubung. Memakai sesi lokal.", "info");
               });
           } else {
             document.getElementById("splash-screen").style.display = "none";
