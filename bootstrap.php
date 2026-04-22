@@ -92,7 +92,7 @@ function ensure_database_exists(): void
 function database_needs_student_reimport(PDO $pdo): bool
 {
     try {
-        $sample = $pdo->query('SELECT username_display, username_normalized, name, bio, class_name FROM students ORDER BY id ASC LIMIT 5')->fetchAll();
+        $sample = $pdo->query('SELECT username_display, username_normalized, secondary_username_normalized, name, bio, class_name FROM students ORDER BY id ASC LIMIT 5')->fetchAll();
         if ($sample === []) {
             return true;
         }
@@ -100,6 +100,7 @@ function database_needs_student_reimport(PDO $pdo): bool
         foreach ($sample as $row) {
             $display = trim((string) ($row['username_display'] ?? ''));
             $normalized = trim((string) ($row['username_normalized'] ?? ''));
+            $secondaryNormalized = trim((string) ($row['secondary_username_normalized'] ?? ''));
             $name = trim((string) ($row['name'] ?? ''));
             $bio = trim((string) ($row['bio'] ?? ''));
             $className = trim((string) ($row['class_name'] ?? ''));
@@ -115,6 +116,10 @@ function database_needs_student_reimport(PDO $pdo): bool
             // Re-import if old records still use synthetic usernames like "smk12075"
             // or any username that no longer mirrors the student's name.
             if ($display !== $name || $normalized !== normalize_username($name)) {
+                return true;
+            }
+
+            if ($secondaryNormalized === '' && $display !== '') {
                 return true;
             }
 
@@ -136,6 +141,12 @@ function ensure_schema_columns(PDO $pdo): void
     $columns = $pdo->query('SHOW COLUMNS FROM students')->fetchAll();
     $existing = array_map(static fn(array $col): string => $col['Field'], $columns);
 
+    if (!in_array('secondary_username_normalized', $existing, true)) {
+        $pdo->exec('ALTER TABLE students ADD COLUMN secondary_username_normalized VARCHAR(191) NULL AFTER username_display');
+    }
+    if (!in_array('secondary_username_display', $existing, true)) {
+        $pdo->exec('ALTER TABLE students ADD COLUMN secondary_username_display VARCHAR(191) NULL AFTER secondary_username_normalized');
+    }
     if (!in_array('active_session_token', $existing, true)) {
         $pdo->exec('ALTER TABLE students ADD COLUMN active_session_token VARCHAR(128) NULL AFTER bio');
     }
@@ -190,9 +201,11 @@ function import_excel_to_database(PDO $pdo, string $excelPath, ?string $profileE
     $pdo->exec('TRUNCATE TABLE students');
     $stmt = $pdo->prepare(
         'INSERT INTO students (
-            username_normalized, username_display, password, name, class_name, jurusan, absen_no, student_id, bio
+            username_normalized, username_display, secondary_username_normalized, secondary_username_display,
+            password, name, class_name, jurusan, absen_no, student_id, bio
         ) VALUES (
-            :username_normalized, :username_display, :password, :name, :class_name, :jurusan, :absen_no, :student_id, :bio
+            :username_normalized, :username_display, :secondary_username_normalized, :secondary_username_display,
+            :password, :name, :class_name, :jurusan, :absen_no, :student_id, :bio
         )'
     );
 
@@ -205,7 +218,8 @@ function import_excel_to_database(PDO $pdo, string $excelPath, ?string $profileE
         }
 
         $password = preg_replace('/\D+/', '', (string) $row['B']);
-        $name = trim((string) $row['C']);
+        $utsName = trim((string) $row['C']);
+        $name = $utsName;
         $className = trim((string) ($row['E'] ?? ''));
         $absenNo = preg_replace('/\D+/', '', (string) ($row['F'] ?? ''));
         $jurusan = extract_jurusan($className);
@@ -217,11 +231,17 @@ function import_excel_to_database(PDO $pdo, string $excelPath, ?string $profileE
         }
 
         $profileRow = $profileByStudentId[$studentId] ?? $profileByName[normalize_username($name)] ?? null;
+        $secondaryUsernameDisplay = null;
+        $secondaryUsernameNormalized = null;
         if ($profileRow) {
+            $profileName = trim((string) ($profileRow['B'] ?? $profileRow['A'] ?? ''));
             $profileClassName = trim((string) ($profileRow['G'] ?? ''));
             $profileJurusan = trim((string) ($profileRow['F'] ?? ''));
             $address = trim((string) ($profileRow['I'] ?? ''));
 
+            if ($profileName !== '') {
+                $name = $profileName;
+            }
             if ($profileClassName !== '') {
                 $className = $profileClassName;
             }
@@ -233,9 +253,16 @@ function import_excel_to_database(PDO $pdo, string $excelPath, ?string $profileE
             }
         }
 
+        if ($utsName !== '' && normalize_username($utsName) !== normalize_username($name)) {
+            $secondaryUsernameDisplay = $utsName;
+            $secondaryUsernameNormalized = normalize_username($utsName);
+        }
+
         $stmt->execute([
             ':username_normalized' => normalize_username($name),
             ':username_display' => $name,
+            ':secondary_username_normalized' => $secondaryUsernameNormalized,
+            ':secondary_username_display' => $secondaryUsernameDisplay,
             ':password' => $password,
             ':name' => $name,
             ':class_name' => $className,
@@ -330,7 +357,7 @@ function parse_sheet_rows(string $xml, array $sharedStrings): array
 
 function fetch_student_by_username(PDO $pdo, string $username): ?array
 {
-    $stmt = $pdo->prepare('SELECT * FROM students WHERE username_normalized = :username LIMIT 1');
+    $stmt = $pdo->prepare('SELECT * FROM students WHERE username_normalized = :username OR secondary_username_normalized = :username LIMIT 1');
     $stmt->execute([':username' => normalize_username($username)]);
     $student = $stmt->fetch();
     return $student ?: null;
