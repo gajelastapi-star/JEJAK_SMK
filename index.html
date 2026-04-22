@@ -295,6 +295,27 @@
           rgba(79, 70, 229, 0.2)
         );
       }
+
+      .camera-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(2, 6, 23, 0.9);
+        z-index: 4000;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 1.5rem;
+      }
+
+      .camera-card {
+        width: 100%;
+        max-width: 420px;
+        background: rgba(15, 23, 42, 0.98);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 2rem;
+        padding: 1rem;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+      }
     </style>
   </head>
   <body class="bg-slate-50 dark:bg-slate-950 transition-colors duration-500">
@@ -833,6 +854,57 @@
       </div>
     </div>
 
+    <div id="camera-overlay" class="camera-overlay">
+      <div class="camera-card space-y-4">
+        <div class="flex items-center justify-between px-1">
+          <div>
+            <p class="text-[10px] font-black uppercase tracking-[0.3em] text-blue-300">
+              Kamera Wajah
+            </p>
+            <h3 class="text-lg font-black text-white uppercase">
+              Ambil Foto Kehadiran
+            </h3>
+          </div>
+          <button
+            onclick="closeAttendanceCamera()"
+            class="w-11 h-11 rounded-2xl bg-white/10 text-white text-lg"
+          >
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        <div class="relative rounded-[1.75rem] overflow-hidden bg-black aspect-[3/4]">
+          <video
+            id="attendance-camera-video"
+            class="w-full h-full object-cover object-center"
+            autoplay
+            playsinline
+            muted
+          ></video>
+          <canvas id="attendance-camera-canvas" class="hidden"></canvas>
+        </div>
+        <p
+          id="camera-status-text"
+          class="text-[10px] text-slate-300 font-bold uppercase text-center"
+        >
+          Pastikan wajah terlihat jelas di dalam kamera.
+        </p>
+        <div class="grid grid-cols-2 gap-3">
+          <button
+            onclick="closeAttendanceCamera()"
+            class="py-4 rounded-2xl bg-white/10 text-white text-[10px] font-black uppercase tracking-widest"
+          >
+            Batal
+          </button>
+          <button
+            onclick="captureAttendanceCamera()"
+            class="py-4 rounded-2xl btn-premium text-[10px] font-black uppercase tracking-widest"
+          >
+            Gunakan Foto
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- FIREBASE CLOUD SYSTEM (Untuk Multiplayer) -->
     <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
@@ -879,6 +951,7 @@
       window.adminSelectedJurusan = "ALL";
       window.adminSelectedClass = "ALL";
       window.studentCatalog = { jurusan: [], classesByJurusan: {} };
+      window.attendanceCameraStream = null;
 
       let db, auth, appId, userSession;
       let pendingPhotoData = "";
@@ -1386,16 +1459,86 @@
       }
 
       window.openAttendanceCamera = function (event) {
+        if (event) event.preventDefault();
         if (window.currentUser.role === "guru") {
-          event.preventDefault();
           return false;
         }
         if (!window.isInsideSchool) {
-          event.preventDefault();
           showNotification("Masuk area sekolah dulu untuk mengaktifkan kamera", "error");
           return false;
         }
+
+        const openNativeCamera = () => {
+          const input = document.getElementById("attendance-photo-input");
+          if (input) input.click();
+        };
+
+        const openInlineCamera = async () => {
+          const overlay = document.getElementById("camera-overlay");
+          const video = document.getElementById("attendance-camera-video");
+          const status = document.getElementById("camera-status-text");
+          if (!overlay || !video) {
+            openNativeCamera();
+            return;
+          }
+
+          try {
+            const stream = await navigator.mediaDevices.getUserMedia({
+              video: {
+                facingMode: "user",
+                width: { ideal: 720 },
+                height: { ideal: 960 },
+              },
+              audio: false,
+            });
+            window.attendanceCameraStream = stream;
+            video.srcObject = stream;
+            overlay.style.display = "flex";
+            if (status) {
+              status.innerText = "Pastikan wajah terlihat jelas di dalam kamera.";
+            }
+          } catch (error) {
+            console.error(error);
+            openNativeCamera();
+            showNotification("Kamera langsung tidak tersedia, memakai kamera bawaan HP", "info");
+          }
+        };
+
+        if (navigator.mediaDevices?.getUserMedia) {
+          openInlineCamera();
+        } else {
+          openNativeCamera();
+        }
         return true;
+      };
+
+      window.closeAttendanceCamera = function () {
+        const overlay = document.getElementById("camera-overlay");
+        const video = document.getElementById("attendance-camera-video");
+        if (video) video.srcObject = null;
+        if (window.attendanceCameraStream) {
+          window.attendanceCameraStream.getTracks().forEach((track) => track.stop());
+          window.attendanceCameraStream = null;
+        }
+        if (overlay) overlay.style.display = "none";
+      };
+
+      window.captureAttendanceCamera = function () {
+        const video = document.getElementById("attendance-camera-video");
+        const canvas = document.getElementById("attendance-camera-canvas");
+        const status = document.getElementById("camera-status-text");
+        if (!video || !canvas || !video.videoWidth || !video.videoHeight) {
+          if (status) status.innerText = "Kamera belum siap. Coba tunggu sebentar.";
+          return;
+        }
+
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const photoData = canvas.toDataURL("image/jpeg", 0.7);
+        window.closeAttendanceCamera();
+        handleAttendancePhotoData(photoData);
       };
 
       function compressImage(file, callback) {
@@ -1415,6 +1558,43 @@
           img.src = String(reader.result || "");
         };
         reader.readAsDataURL(file);
+      }
+
+      function handleAttendancePhotoData(photoData) {
+        window.currentUser.lastAttendancePhoto = photoData;
+        window.currentUser.attendancePhotoDay = new Date().toLocaleDateString("id-ID");
+        localStorage.setItem(
+          "smkn2_live_session",
+          JSON.stringify(window.currentUser),
+        );
+        const preview = document.getElementById("photo-page-preview");
+        if (preview) preview.src = photoData;
+        addHistoryLog("Mengambil foto wajah untuk kehadiran");
+        updatePhotoFeatureState();
+        updateAbsenButtonState();
+
+        if (!db || !userSession) {
+          showNotification("Foto wajah tersimpan. Tombol absen sudah aktif.", "success");
+          return;
+        }
+
+        addDoc(collection(db, "artifacts", appId, "public", "data", "photo_reports"), {
+          name: window.currentUser.name,
+          class: window.currentUser.class,
+          jurusan: window.currentUser.jurusan,
+          absenNo: window.currentUser.absenNo,
+          studentId: window.currentUser.id,
+          lat: window.userPos[0],
+          lng: window.userPos[1],
+          photo: photoData,
+          timestamp: Date.now(),
+        })
+          .then(() =>
+            showNotification("Foto wajah berhasil dikirim. Sekarang tekan absen.", "success"),
+          )
+          .catch(() =>
+            showNotification("Foto tersimpan, tetapi pengiriman ke admin gagal", "error"),
+          );
       }
 
       function renderAdminPhotoReports(reports) {
@@ -1799,40 +1979,7 @@
         }
 
         compressImage(file, (photoData) => {
-          window.currentUser.lastAttendancePhoto = photoData;
-          window.currentUser.attendancePhotoDay = new Date().toLocaleDateString("id-ID");
-          localStorage.setItem(
-            "smkn2_live_session",
-            JSON.stringify(window.currentUser),
-          );
-          const preview = document.getElementById("photo-page-preview");
-          if (preview) preview.src = photoData;
-          addHistoryLog("Mengambil foto wajah untuk kehadiran");
-          updatePhotoFeatureState();
-          updateAbsenButtonState();
-
-          if (!db || !userSession) {
-            showNotification("Foto wajah tersimpan. Tombol absen sudah aktif.", "success");
-            return;
-          }
-
-          addDoc(collection(db, "artifacts", appId, "public", "data", "photo_reports"), {
-            name: window.currentUser.name,
-            class: window.currentUser.class,
-            jurusan: window.currentUser.jurusan,
-            absenNo: window.currentUser.absenNo,
-            studentId: window.currentUser.id,
-            lat: window.userPos[0],
-            lng: window.userPos[1],
-            photo: photoData,
-            timestamp: Date.now(),
-          })
-            .then(() =>
-              showNotification("Foto wajah berhasil dikirim. Sekarang tekan absen.", "success"),
-            )
-            .catch(() =>
-              showNotification("Foto tersimpan, tetapi pengiriman ke admin gagal", "error"),
-            );
+          handleAttendancePhotoData(photoData);
         });
       }
 
